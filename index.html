@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Pages Domino Recognition</title>
+    <!-- ONNX Runtime Web via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div id="app-container">
+        <header>
+            <h1>Domino Recognition</h1>
+            <p>Score your dominos automatically using machine learning!</p>
+        </header>
+
+        <main>
+            <section id="game-setup">
+                <h2>Game Setup</h2>
+                <div class="controls">
+                    <input type="text" id="new-player-name" placeholder="Enter player name">
+                    <button id="add-player-btn">Add Player</button>
+                    <button id="reset-scores-btn">Reset Scores</button>
+                    <button id="clear-players-btn" class="danger">Clear List</button>
+                </div>
+            </section>
+
+            <section id="scoreboard">
+                <h2>Leaderboard</h2>
+                <ul id="player-list">
+                    <!-- Player items will be injected here via JavaScript -->
+                </ul>
+            </section>
+        </main>
+
+        <!-- Camera / Validation Modal -->
+        <div id="camera-modal" class="modal">
+            <div class="modal-content">
+                <span class="close-btn" id="close-modal-btn">&times;</span>
+                <h2>Capture Score for <span id="current-player-name">Player</span></h2>
+
+                <div id="detection-mode-toggle">
+                    <span class="mode-label" id="mode-label-single">Single-Pass</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="two-pass-toggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="mode-label" id="mode-label-twopass">Two-Pass Crop</span>
+                </div>
+
+                <div id="camera-container">
+                    <!-- Live Camera Feed -->
+                    <video id="webcam" autoplay playsinline></video>
+                    <!-- Captured Image and ML Bounding Boxes Overlay -->
+                    <canvas id="overlay-canvas" class="hidden"></canvas>
+                </div>
+
+                <div class="modal-controls">
+                    <button id="capture-btn">Capture & Score</button>
+                    <button id="retake-btn" class="hidden">Retake</button>
+                    <button id="accept-score-btn" class="hidden success">Accept Score: <span
+                            id="calculated-score">0</span></button>
+                </div>
+
+                <p id="status-message">Loading camera...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Debug Log Panel -->
+    <div id="log-panel-container">
+        <div id="log-panel-header">
+            <button id="log-toggle-btn">Show Logs ▲</button>
+            <button id="log-clear-btn">Clear</button>
+        </div>
+        <div id="log-panel" class="collapsed">
+            <div id="log-output"></div>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script src="js/logger.js"></script>
+    <script src="js/vision.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>
