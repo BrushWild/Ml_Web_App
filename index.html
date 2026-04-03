@@ -40,7 +40,17 @@
         <main>
             <!-- ── Game Setup Card ─────────────────── -->
             <section id="game-setup">
-                <h2>Edit Players</h2>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+                    <h2 style="margin-bottom:0;">Edit Players</h2>
+                    <label class="toggle-switch theme-toggle-switch" title="Toggle Theme" aria-label="Toggle Dark Mode">
+                        <input type="checkbox" id="theme-toggle-checkbox">
+                        <span class="toggle-slider">
+                            <span class="theme-orb" id="theme-orb">
+                                <span class="material-icons" id="theme-icon">light_mode</span>
+                            </span>
+                        </span>
+                    </label>
+                </div>
                 <div class="controls">
                     <button id="add-player-btn">
                         <span class="material-icons"

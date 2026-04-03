@@ -45,8 +45,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const isCollapsed = logSection.classList.toggle('collapsed');
             logFabIcon.textContent = isCollapsed ? 'terminal' : 'close';
             if (!isCollapsed) {
-                // Scroll the log tile into view smoothly
-                logSection.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                // Ensure the internal terminal stays scrolled to bottom when opened instead
+                const logOutput = document.getElementById('log-output');
+                if (logOutput) logOutput.scrollTop = logOutput.scrollHeight;
             }
         });
     }
@@ -55,6 +56,31 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     Logger.info('App initialized.');
+
+    // === Theme Toggle Logic ===
+    const themeCheckbox = document.getElementById("theme-toggle-checkbox");
+    const themeIcon = document.getElementById("theme-icon");
+
+    const savedTheme = localStorage.getItem('dominoTheme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const isDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
+
+    if (isDark) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        if (themeCheckbox) themeCheckbox.checked = true;
+        if (themeIcon) themeIcon.textContent = 'dark_mode'; // Moon for dark
+    } else {
+        if (themeIcon) themeIcon.textContent = 'light_mode'; // Sun for light
+    }
+
+    if (themeCheckbox && themeIcon) {
+        themeCheckbox.addEventListener('change', (e) => {
+            const newTheme = e.target.checked ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('dominoTheme', newTheme);
+            themeIcon.textContent = newTheme === 'dark' ? 'dark_mode' : 'light_mode';
+        });
+    }
 
     // === Detection Mode Toggle ===
     const updateModeLabels = () => {
