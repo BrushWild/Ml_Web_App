@@ -18,9 +18,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const statusMessageEl = document.getElementById("status-message");
 
     // Log Panel Elements
-    const logSection  = document.getElementById('log-section');
-    const logFab      = document.getElementById('log-fab');
-    const logFabIcon  = document.getElementById('log-fab-icon');
+    const logSection = document.getElementById('log-section');
+    const logFab = document.getElementById('log-fab');
+    const logFabIcon = document.getElementById('log-fab-icon');
     const logClearBtn = document.getElementById('log-clear-btn');
 
     // Detection Mode Toggle
@@ -89,7 +89,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const infoDiv = document.createElement("div");
             infoDiv.className = "player-info";
-            infoDiv.textContent = `${player.name} - Score: ${player.score}`;
+
+            const nameSpan = document.createElement("div");
+            nameSpan.className = "player-name";
+            nameSpan.textContent = player.name;
+
+            const scoreContainer = document.createElement("div");
+            scoreContainer.className = "player-score-container";
+
+            const scoreSpan = document.createElement("span");
+            scoreSpan.className = "player-score-large";
+            scoreSpan.textContent = player.score;
+
+            const scorePts = document.createElement("span");
+            scorePts.className = "player-score-pts";
+
+            scoreContainer.appendChild(scoreSpan);
+            scoreContainer.appendChild(scorePts);
+
+            infoDiv.appendChild(nameSpan);
+            infoDiv.appendChild(scoreContainer);
 
             const actionsDiv = document.createElement("div");
             actionsDiv.className = "player-actions";
@@ -232,8 +251,8 @@ document.addEventListener("DOMContentLoaded", () => {
     document.addEventListener('addPlayer', (e) => {
         addPlayer(e.detail.name, e.detail.score);
     });
-    resetScoresBtn.addEventListener("click", resetScores);
-    clearPlayersBtn.addEventListener("click", clearPlayers);
+    resetScoresBtn?.addEventListener("click", resetScores);
+    clearPlayersBtn?.addEventListener("click", clearPlayers);
 
 
     // === Camera and Modal Logic ===

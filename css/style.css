@@ -508,25 +508,42 @@ li .player-rank {
 
 .player-info {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-start;
     flex: 1;
     min-width: 0;
 }
 
 .player-name {
-    font-size: 16px;
-    font-weight: 500;
-    color: var(--md-on-surface);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--md-on-bg);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    line-height: 1.1;
 }
 
-.player-score {
+.player-score-container {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.player-score-large {
+    font-size: 40px;
+    font-weight: 700;
+    color: #333d34; /* Dark tint matching the screenshot */
+    line-height: 1;
+    letter-spacing: -1px;
+}
+
+.player-score-pts {
     font-size: 14px;
+    font-weight: 600;
     color: var(--md-on-surface-sub);
-    margin-left: 10px;
-    white-space: nowrap;
+    text-transform: uppercase;
 }
 
 .player-actions {
@@ -884,6 +901,5 @@ canvas {
         width: 100%;
         height: 44px;     /* fixed height matches button height */
     }
-    button      { width: 100%; text-align: center; }
-    .player-actions { flex-direction: column; gap: 6px; }
+    button:not(.icon-btn) { width: 100%; text-align: center; }
 }
