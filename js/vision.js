@@ -1,7 +1,10 @@
 // vision.js - Handles ONNX Runtime loading and Inference
 
 let yoloModel = null;
-const MODEL_PATH = 'assets/models/best.onnx';
+// Resolve model path relative to project root (works from any page location)
+const _scriptEl = document.currentScript;
+const _scriptDir = _scriptEl ? _scriptEl.src.substring(0, _scriptEl.src.lastIndexOf('/') + 1) : '';
+const MODEL_PATH = _scriptDir ? _scriptDir + '../assets/models/best.onnx' : 'assets/models/best.onnx';
 const INPUT_SIZE = 640;
 
 // Initialize ONNX Session

@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Domino Vision - Scoreboard</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;family=Roboto:wght@400;500;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-container": "#60622d",
+                        "on-tertiary": "#fcfdb9",
+                        "on-secondary-fixed": "#344331",
+                        "outline": "#767d72",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-high": "#e4eade",
+                        "on-secondary-container": "#465643",
+                        "on-tertiary-fixed-variant": "#6a6d37",
+                        "on-secondary": "#ecfee4",
+                        "secondary-container": "#d6e8ce",
+                        "surface-tint": "#116e20",
+                        "on-tertiary-fixed": "#4d501d",
+                        "secondary": "#53634f",
+                        "on-surface-variant": "#5a6157",
+                        "primary-fixed-dim": "#90e98b",
+                        "surface-container-highest": "#dee5d8",
+                        "error-dim": "#791903",
+                        "surface-dim": "#d5dccf",
+                        "on-primary-fixed": "#004b0f",
+                        "tertiary-fixed": "#fcfeb9",
+                        "inverse-on-surface": "#9b9e97",
+                        "tertiary-fixed-dim": "#edefac",
+                        "tertiary": "#60622d",
+                        "secondary-fixed-dim": "#c7dac1",
+                        "outline-variant": "#adb4a8",
+                        "inverse-surface": "#0c0f0b",
+                        "tertiary-container": "#fcfeb9",
+                        "inverse-primary": "#9df898",
+                        "surface-container": "#ebf0e5",
+                        "on-primary-fixed-variant": "#0a6a1d",
+                        "error-container": "#fd795a",
+                        "secondary-dim": "#475744",
+                        "primary": "#116e20",
+                        "on-primary": "#eaffe2",
+                        "on-error": "#fff7f6",
+                        "primary-dim": "#006117",
+                        "on-secondary-fixed-variant": "#50604c",
+                        "on-background": "#2e342b",
+                        "surface": "#f8faf2",
+                        "error": "#a73b21",
+                        "on-surface": "#2e342b",
+                        "surface-variant": "#dee5d8",
+                        "primary-fixed": "#9df898",
+                        "on-error-container": "#6e1400",
+                        "tertiary-dim": "#545622",
+                        "primary-container": "#9df898",
+                        "surface-bright": "#f8faf2",
+                        "on-primary-container": "#006016",
+                        "background": "#f8faf2",
+                        "secondary-fixed": "#d6e8ce",
+                        "surface-container-low": "#f1f5eb"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Roboto", "Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+    <style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+
+<body class="bg-surface text-on-surface min-h-screen pb-32">
+    <!-- TopAppBar -->
+    <header class="w-full top-0 sticky z-50 bg-[#f8faf2] dark:bg-[#1a1c18] flex items-center justify-between px-6 py-4">
+        <div class="w-10"></div> <!-- Spacer for centering -->
+        <h1 class="font-['Inter'] font-bold tracking-tight text-xl text-[#2e342b] dark:text-[#e1e3da]">
+            Domino Vision
+        </h1>
+        <div class="w-10"></div> <!-- Spacer for centering -->
+    </header>
+    <main class="px-6 max-w-2xl mx-auto mt-8">
+        <!-- Editorial Header Section -->
+        <section class="mb-10">
+            <div class="flex items-baseline justify-between mb-2">
+                <h2 class="text-xs font-black uppercase tracking-widest text-on-surface-variant">Leaderboard</h2>
+            </div>
+            <div class="h-1 w-12 bg-primary rounded-full"></div>
+        </section>
+        <!-- Player Cards List - Asymmetric/Tonal Layering -->
+        <div id="player-list" class="space-y-4">
+            <!-- Player cards rendered dynamically via JavaScript -->
+        </div>
+        <!-- Add Player Action - Glassmorphism -->
+    </main>
+    <!-- BottomNavBar -->
+    <nav
+        class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-8 pb-6 pt-3 bg-[#ffffff] dark:bg-stone-900 shadow-[0_-4px_24px_rgba(46,52,43,0.06)] rounded-t-[1.5rem]">
+        <!-- Setup Tab (Inactive) -->
+        <a class="flex flex-col items-center justify-center text-[#2e342b] dark:text-stone-500 opacity-70 hover:bg-[#f1f5eb] dark:hover:bg-stone-800 transition-all duration-200 p-2 rounded-xl"
+            href="setup.html">
+            <span class="material-symbols-outlined mb-1" data-icon="settings">settings</span>
+            <span class="font-['Inter'] text-[12px] font-medium tracking-tight">Setup</span>
+        </a>
+        <!-- Leaderboard Tab (Active) -->
+        <a class="flex flex-col items-center justify-center bg-[#dee5d8] dark:bg-stone-800 text-[#116e20] dark:text-green-300 rounded-full px-5 py-1.5 scale-100 active:scale-90 transition-all duration-200"
+            href="scoreboard.html">
+            <span class="material-symbols-outlined mb-0.5" data-icon="leaderboard"
+                style="font-variation-settings: 'FILL' 1;">leaderboard</span>
+            <span class="font-['Inter'] text-[12px] font-medium tracking-tight">Leaderboard</span>
+        </a>
+    </nav>
+    <!-- Floating Action Button (Contextual for Leaderboard/Game Setup) -->
+    <!-- Edit Player Modal (Hidden by default) -->
+    <div class="hidden fixed inset-0 z-[70] bg-on-surface/40 backdrop-blur-md flex items-center justify-center p-4"
+        id="edit-player-modal">
+        <div
+            class="bg-surface relative w-full max-w-md rounded-xl shadow-[0_24px_48px_rgba(46,52,43,0.12)] overflow-hidden flex flex-col">
+            <!-- Modal Header -->
+            <div class="px-6 py-5 flex items-center justify-between border-b border-outline-variant/15">
+                <h2 class="text-xl font-bold tracking-tight text-on-surface font-headline">Edit Player</h2>
+                <button id="modal-close-btn" class="p-2 rounded-full hover:bg-surface-container-high transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <!-- Form Content -->
+            <div class="p-6 space-y-6 bg-surface-container-low">
+                <div class="space-y-2">
+                    <label class="text-sm font-bold text-on-surface-variant uppercase tracking-wider">Player
+                        Name</label>
+                    <input id="edit-player-name"
+                        class="w-full px-4 py-3 rounded-lg border-outline-variant/30 bg-surface focus:ring-primary focus:border-primary"
+                        type="text" />
+                </div>
+                <div class="space-y-2">
+                    <label class="text-sm font-bold text-on-surface-variant uppercase tracking-wider">Score</label>
+                    <input id="edit-player-score"
+                        class="w-full px-4 py-3 rounded-lg border-outline-variant/30 bg-surface focus:ring-primary focus:border-primary font-headline font-bold text-xl"
+                        type="number" />
+                </div>
+            </div>
+            <!-- Actions -->
+            <div class="bg-surface-container-lowest px-6 py-6 flex gap-3">
+                <button id="modal-cancel-btn"
+                    class="flex-1 py-4 rounded-full bg-surface-container-high text-on-surface font-bold transition-all active:scale-95">
+                    Cancel
+                </button>
+                <button id="modal-save-btn"
+                    class="flex-1 py-4 rounded-full bg-primary text-on-primary font-bold shadow-lg shadow-primary/20 transition-all active:scale-95">
+                    Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Camera Capture Modal -->
+    <div class="hidden fixed inset-0 z-[80] bg-on-surface/50 backdrop-blur-lg flex items-center justify-center p-4"
+        id="camera-modal">
+        <div
+            class="bg-surface relative w-full max-w-lg rounded-2xl shadow-[0_24px_48px_rgba(46,52,43,0.18)] overflow-hidden flex flex-col">
+            <!-- Modal Header -->
+            <div class="px-6 py-5 flex items-center justify-between border-b border-outline-variant/15">
+                <div>
+                    <h2 class="text-xl font-bold tracking-tight text-on-surface font-headline">Capture Score</h2>
+                    <p class="text-sm text-on-surface-variant mt-0.5">for <span id="camera-player-name"
+                            class="font-semibold text-primary">Player</span></p>
+                </div>
+                <button id="camera-close-btn"
+                    class="p-2 rounded-full hover:bg-surface-container-high transition-colors active:scale-90">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <!-- Detection Mode Toggle -->
+            <div class="flex items-center justify-center gap-3 py-3 bg-surface-container-low">
+                <span id="mode-label-single"
+                    class="text-xs font-semibold text-primary uppercase tracking-wider">Single-Pass</span>
+                <label class="relative inline-block w-11 h-6 cursor-pointer">
+                    <input type="checkbox" id="two-pass-toggle" class="sr-only peer">
+                    <div
+                        class="w-11 h-6 bg-outline-variant rounded-full peer-checked:bg-primary transition-colors duration-300">
+                    </div>
+                    <div
+                        class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-300 peer-checked:translate-x-5">
+                    </div>
+                </label>
+                <span id="mode-label-twopass"
+                    class="text-xs font-semibold text-outline uppercase tracking-wider">Two-Pass</span>
+            </div>
+
+            <!-- Camera Feed -->
+            <div class="relative w-full aspect-[4/3] bg-black overflow-hidden">
+                <video id="webcam" autoplay playsinline class="absolute inset-0 w-full h-full object-contain"></video>
+                <canvas id="overlay-canvas" class="hidden absolute inset-0 w-full h-full object-contain"></canvas>
+            </div>
+
+            <!-- Status Message -->
+            <p id="camera-status"
+                class="text-center text-sm text-on-surface-variant italic py-3 bg-surface-container-low">
+                Loading camera...</p>
+
+            <!-- Action Buttons -->
+            <div class="px-6 py-5 flex gap-3 bg-surface-container-lowest">
+                <button id="capture-btn"
+                    class="flex-1 py-4 rounded-full bg-primary text-on-primary font-bold shadow-lg shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-lg">camera</span>
+                    Capture & Score
+                </button>
+                <button id="retake-btn"
+                    class="hidden flex-1 py-4 rounded-full bg-surface-container-high text-on-surface font-bold transition-all active:scale-95 flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-lg">refresh</span>
+                    Retake
+                </button>
+                <button id="accept-score-btn"
+                    class="hidden flex-1 py-4 rounded-full bg-primary text-on-primary font-bold shadow-lg shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-lg">check_circle</span>
+                    Accept: <span id="calculated-score" class="tabular-nums">0</span> pts
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load vision pipeline scripts (paths relative to pages/) -->
+    <script src="../js/logger.js"></script>
+    <script src="../js/vision.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // === DOM Elements: Leaderboard ===
+            const playerListEl = document.getElementById('player-list');
+            const editModal = document.getElementById('edit-player-modal');
+            const editNameInput = document.getElementById('edit-player-name');
+            const editScoreInput = document.getElementById('edit-player-score');
+            const modalCloseBtn = document.getElementById('modal-close-btn');
+            const modalCancelBtn = document.getElementById('modal-cancel-btn');
+            const modalSaveBtn = document.getElementById('modal-save-btn');
+
+            // === DOM Elements: Camera Modal ===
+            const cameraModal = document.getElementById('camera-modal');
+            const cameraCloseBtn = document.getElementById('camera-close-btn');
+            const cameraPlayerNameEl = document.getElementById('camera-player-name');
+            const webcamEl = document.getElementById('webcam');
+            const overlayCanvas = document.getElementById('overlay-canvas');
+            const captureBtn = document.getElementById('capture-btn');
+            const retakeBtn = document.getElementById('retake-btn');
+            const acceptScoreBtn = document.getElementById('accept-score-btn');
+            const calculatedScoreEl = document.getElementById('calculated-score');
+            const cameraStatusEl = document.getElementById('camera-status');
+            const twoPassToggle = document.getElementById('two-pass-toggle');
+            const modeLabelSingle = document.getElementById('mode-label-single');
+            const modeLabelTwopass = document.getElementById('mode-label-twopass');
+
+            // === State ===
+            let players = JSON.parse(localStorage.getItem('dominoPlayers')) || [];
+            let editingPlayerId = null;
+            let currentPlayerIdForScore = null;
+            let currentVideoStream = null;
+            let currentScore = 0;
+
+            const savePlayers = () => {
+                localStorage.setItem('dominoPlayers', JSON.stringify(players));
+            };
+
+            const escapeHtml = (str) => {
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            };
+
+            // === Detection Mode Toggle ===
+            const updateModeLabels = () => {
+                if (twoPassToggle.checked) {
+                    modeLabelSingle.classList.remove('text-primary');
+                    modeLabelSingle.classList.add('text-outline');
+                    modeLabelTwopass.classList.remove('text-outline');
+                    modeLabelTwopass.classList.add('text-primary');
+                } else {
+                    modeLabelSingle.classList.add('text-primary');
+                    modeLabelSingle.classList.remove('text-outline');
+                    modeLabelTwopass.classList.add('text-outline');
+                    modeLabelTwopass.classList.remove('text-primary');
+                }
+            };
+            updateModeLabels();
+            twoPassToggle.addEventListener('change', updateModeLabels);
+
+            // === Edit Modal ===
+            const openEditModal = (playerId) => {
+                const player = players.find(p => p.id === playerId);
+                if (!player) return;
+                editingPlayerId = playerId;
+                editNameInput.value = player.name;
+                editScoreInput.value = player.score;
+                editModal.classList.remove('hidden');
+            };
+
+            const closeEditModal = () => {
+                editModal.classList.add('hidden');
+                editingPlayerId = null;
+            };
+
+            const saveEditedPlayer = () => {
+                if (!editingPlayerId) return;
+                const player = players.find(p => p.id === editingPlayerId);
+                if (!player) return;
+                player.name = editNameInput.value.trim() || player.name;
+                player.score = parseInt(editScoreInput.value, 10) || 0;
+                savePlayers();
+                closeEditModal();
+                renderPlayers();
+            };
+
+            modalCloseBtn.addEventListener('click', closeEditModal);
+            modalCancelBtn.addEventListener('click', closeEditModal);
+            modalSaveBtn.addEventListener('click', saveEditedPlayer);
+            editModal.addEventListener('click', (e) => {
+                if (e.target === editModal) closeEditModal();
+            });
+
+            // === Camera Modal ===
+            const openCameraModal = async (playerId) => {
+                const player = players.find(p => p.id === playerId);
+                if (!player) return;
+
+                currentPlayerIdForScore = playerId;
+                cameraPlayerNameEl.textContent = player.name;
+
+                // Reset modal state
+                webcamEl.classList.remove('hidden');
+                overlayCanvas.classList.add('hidden');
+                captureBtn.classList.remove('hidden');
+                retakeBtn.classList.add('hidden');
+                acceptScoreBtn.classList.add('hidden');
+                cameraStatusEl.textContent = 'Starting camera...';
+                currentScore = 0;
+
+                cameraModal.classList.remove('hidden');
+
+                try {
+                    currentVideoStream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: 'environment' }
+                    });
+                    webcamEl.srcObject = currentVideoStream;
+                    cameraStatusEl.textContent = 'Camera ready. Position dominos in view.';
+                } catch (err) {
+                    console.error('Camera error:', err);
+                    cameraStatusEl.textContent = 'Error accessing camera. Please grant permissions.';
+                }
+            };
+
+            const closeCameraModal = () => {
+                cameraModal.classList.add('hidden');
+                if (currentVideoStream) {
+                    currentVideoStream.getTracks().forEach(track => track.stop());
+                    currentVideoStream = null;
+                }
+                currentPlayerIdForScore = null;
+            };
+
+            cameraCloseBtn.addEventListener('click', closeCameraModal);
+            cameraModal.addEventListener('click', (e) => {
+                if (e.target === cameraModal) closeCameraModal();
+            });
+
+            // Capture & Score
+            const captureAndScore = async () => {
+                if (!currentVideoStream) return;
+
+                if (typeof window.processImageForScore !== 'function') {
+                    cameraStatusEl.textContent = 'Vision model is not loaded yet. Please wait...';
+                    return;
+                }
+
+                cameraStatusEl.textContent = 'Processing image...';
+                captureBtn.classList.add('hidden');
+
+                // Match canvas to video dimensions
+                overlayCanvas.width = webcamEl.videoWidth;
+                overlayCanvas.height = webcamEl.videoHeight;
+
+                if (overlayCanvas.width === 0 || overlayCanvas.height === 0) {
+                    cameraStatusEl.textContent = 'Error: camera not ready. Try again.';
+                    captureBtn.classList.remove('hidden');
+                    return;
+                }
+
+                const ctx = overlayCanvas.getContext('2d');
+                ctx.drawImage(webcamEl, 0, 0, overlayCanvas.width, overlayCanvas.height);
+
+                // Swap video for canvas
+                webcamEl.classList.add('hidden');
+                overlayCanvas.classList.remove('hidden');
+
+                try {
+                    const useTwoPass = twoPassToggle.checked;
+                    const processFn = useTwoPass
+                        ? window.processImageForScoreTwoPass
+                        : window.processImageForScore;
+                    const { score } = await processFn(overlayCanvas);
+                    currentScore = score;
+                    calculatedScoreEl.textContent = currentScore;
+
+                    retakeBtn.classList.remove('hidden');
+                    acceptScoreBtn.classList.remove('hidden');
+                    cameraStatusEl.textContent = `Detected score: ${currentScore}. Accept or retake?`;
+                } catch (error) {
+                    console.error('Scoring error:', error);
+                    cameraStatusEl.textContent = 'Error processing image. Try again.';
+                    retakeBtn.classList.remove('hidden');
+                }
+            };
+
+            const retakeImage = () => {
+                overlayCanvas.classList.add('hidden');
+                webcamEl.classList.remove('hidden');
+                captureBtn.classList.remove('hidden');
+                retakeBtn.classList.add('hidden');
+                acceptScoreBtn.classList.add('hidden');
+                cameraStatusEl.textContent = 'Camera ready. Position dominos in view.';
+            };
+
+            const acceptScore = () => {
+                if (currentPlayerIdForScore) {
+                    const player = players.find(p => p.id === currentPlayerIdForScore);
+                    if (player) {
+                        player.score += currentScore;
+                        savePlayers();
+                        renderPlayers();
+                    }
+                }
+                closeCameraModal();
+            };
+
+            captureBtn.addEventListener('click', captureAndScore);
+            retakeBtn.addEventListener('click', retakeImage);
+            acceptScoreBtn.addEventListener('click', acceptScore);
+
+            // === Player Card Rendering ===
+            const renderPlayers = () => {
+                players = JSON.parse(localStorage.getItem('dominoPlayers')) || [];
+                playerListEl.innerHTML = '';
+
+                if (players.length === 0) {
+                    playerListEl.innerHTML = `
+                    <div class="text-center py-12">
+                        <span class="material-symbols-outlined text-5xl text-outline-variant mb-3 block">group_add</span>
+                        <p class="text-lg font-medium text-on-surface-variant">No players yet</p>
+                        <p class="text-sm text-outline mt-1">Add players from the Setup page</p>
+                    </div>`;
+                    return;
+                }
+
+                const sorted = [...players].sort((a, b) => a.score - b.score);
+
+                sorted.forEach((player, index) => {
+                    const rank = index + 1;
+                    const isLeader = rank === 1;
+                    const card = document.createElement('div');
+
+                    if (isLeader) {
+                        card.className = 'bg-surface-container-highest rounded-xl p-6 transition-transform active:scale-[0.98]';
+                        card.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <p class="text-xs font-bold text-primary mb-1 uppercase tracking-tighter">Rank ${rank}</p>
+                                <h3 class="text-2xl font-bold text-on-surface tracking-tight mb-2">${escapeHtml(player.name)}</h3>
+                                <div class="flex items-baseline gap-2">
+                                    <span class="text-5xl font-black text-on-surface tabular-nums">${player.score}</span>
+                                    <span class="text-sm font-medium text-on-surface-variant">PTS</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <button data-camera="${player.id}"
+                                    class="w-12 h-12 flex items-center justify-center bg-primary text-on-primary rounded-full shadow-lg shadow-primary/20 active:scale-90 transition-all">
+                                    <span class="material-symbols-outlined">photo_camera</span>
+                                </button>
+                                <button data-edit="${player.id}"
+                                    class="w-12 h-12 flex items-center justify-center bg-surface-container-low text-on-surface-variant rounded-full active:scale-90 transition-all">
+                                    <span class="material-symbols-outlined">settings</span>
+                                </button>
+                            </div>
+                        </div>`;
+                    } else {
+                        card.className = 'bg-surface-container-low rounded-xl p-6';
+                        card.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <p class="text-xs font-bold text-outline mb-1 uppercase tracking-tighter">Rank ${rank}</p>
+                                <h3 class="text-xl font-bold text-on-surface tracking-tight mb-2">${escapeHtml(player.name)}</h3>
+                                <div class="flex items-baseline gap-2">
+                                    <span class="text-4xl font-black text-on-surface tabular-nums">${player.score}</span>
+                                    <span class="text-sm font-medium text-on-surface-variant">PTS</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <button data-camera="${player.id}"
+                                    class="w-10 h-10 flex items-center justify-center bg-surface-container-highest text-primary rounded-full active:scale-90 transition-all">
+                                    <span class="material-symbols-outlined">photo_camera</span>
+                                </button>
+                                <button data-edit="${player.id}"
+                                    class="w-10 h-10 flex items-center justify-center bg-surface-container-high text-on-surface-variant rounded-full active:scale-90 transition-all">
+                                    <span class="material-symbols-outlined">settings</span>
+                                </button>
+                            </div>
+                        </div>`;
+                    }
+
+                    playerListEl.appendChild(card);
+                });
+
+                // Event delegation for player card buttons
+                playerListEl.addEventListener('click', handleCardClick);
+            };
+
+            const handleCardClick = (e) => {
+                const cameraBtn = e.target.closest('[data-camera]');
+                if (cameraBtn) {
+                    openCameraModal(cameraBtn.dataset.camera);
+                    return;
+                }
+                const editBtn = e.target.closest('[data-edit]');
+                if (editBtn) {
+                    openEditModal(editBtn.dataset.edit);
+                    return;
+                }
+            };
+
+            // Initial render
+            renderPlayers();
+        });
+    </script>
+</body>
+
+</html>

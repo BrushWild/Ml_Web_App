@@ -1,135 +1,558 @@
-/* Basic Styling for Domino Recognition App */
+/* =====================================================
+   Material Design — Light Theme, Pastel Green Accents
+   Roboto Font | Bounce/Stretch Button Animations
+   ===================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+
+/* ── Design Tokens ─────────────────────────────────── */
 :root {
-    --primary: #4CAF50;
-    --primary-dark: #388E3C;
-    --danger: #f44336;
-    --danger-dark: #d32f2f;
-    --bg-color: #f5f5f5;
-    --surface: #ffffff;
-    --text: #333333;
+    /* Pastel green palette */
+    --md-primary:         #66BB6A;   /* pastel green */
+    --md-primary-light:   #A5D6A7;   /* lighter tint */
+    --md-primary-lighter: #E8F5E9;   /* surface tint */
+    --md-primary-dark:    #388E3C;   /* darker shade  */
+    --md-on-primary:      #FFFFFF;
+
+    /* Semantic / Role colours */
+    --md-secondary:       #80CBC4;   /* teal accent */
+    --md-error:           #EF5350;
+    --md-error-dark:      #C62828;
+    --md-warning:         #FFA726;
+    --md-info:            #42A5F5;
+
+    /* Surface system */
+    --md-bg:              #F1F8F2;   /* page background */
+    --md-surface:         #FFFFFF;
+    --md-surface-variant: #F4FAF4;
+    --md-outline:         #C8E6C9;
+    --md-outline-strong:  #A5D6A7;
+
+    /* Text */
+    --md-on-bg:           #1B2E1C;
+    --md-on-surface:      #1B2E1C;
+    --md-on-surface-sub:  #4E7050;
+    --md-on-surface-dim:  #88A889;
+
+    /* Elevation shadows */
+    --shadow-1: 0 1px 2px rgba(0,0,0,.08), 0 1px 4px rgba(0,0,0,.06);
+    --shadow-2: 0 2px 6px rgba(0,0,0,.10), 0 2px 8px rgba(0,0,0,.06);
+    --shadow-3: 0 4px 16px rgba(0,0,0,.12), 0 2px 8px rgba(0,0,0,.06);
+
+    /* Motion */
+    --ease-spring: cubic-bezier(.34,1.56,.64,1);
+    --ease-md:     cubic-bezier(.4,0,.2,1);
+
+    /* Shape */
+    --radius-sm:  4px;
+    --radius-md:  12px;
+    --radius-lg:  20px;
+    --radius-xl:  28px;
+    --radius-full: 9999px;
+}
+
+/* ── Reset & Base ──────────────────────────────────── */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: var(--bg-color);
-    color: var(--text);
-    margin: 0;
-    padding: 0;
+    font-family: 'Roboto', sans-serif;
+    background-color: var(--md-bg);
+    color: var(--md-on-bg);
+    line-height: 1.5;
+    min-height: 100vh;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    padding-bottom: 24px;
 }
 
+/* ── App Container ─────────────────────────────────── */
 #app-container {
     width: 100%;
-    max-width: 600px;
-    padding: 20px;
-    box-sizing: border-box;
+    max-width: 620px;
+    padding: 24px 16px;
 }
 
+/* ── App Bar / Header ──────────────────────────────── */
 header {
+    background: linear-gradient(135deg, var(--md-primary) 0%, var(--md-primary-dark) 100%);
+    border-radius: var(--radius-xl);
+    padding: 28px 24px 24px;
+    margin-bottom: 24px;
     text-align: center;
-    margin-bottom: 30px;
+    box-shadow: var(--shadow-3);
+    position: relative;
+    overflow: hidden;
 }
 
-h1,
-h2 {
-    color: var(--primary-dark);
+header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 70% 20%, rgba(255,255,255,.18) 0%, transparent 60%);
 }
 
+header h1 {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--md-on-primary);
+    letter-spacing: .3px;
+    position: relative;
+}
+
+.domino-icon {
+    display: inline-block;
+}
+
+.train-animated {
+    position: absolute;
+    bottom: -2px; /* Slightly clipped at the bottom to look like it's resting on the edge */
+    height: 28px;
+    width: auto;
+    opacity: 0.9;
+    /* Total duration 8.25s: 8s to drive, 0.25s delay offscreen (approx 97% is 8/8.25) */
+    animation: train-drive 8.25s linear infinite;
+}
+
+@keyframes train-drive {
+    0%    { left: -60px; }
+    97%   { left: 100%; }
+    100%  { left: 100%; }
+}
+
+.domino-puff {
+    position: absolute;
+    bottom: 12px; /* Start inside the top of the train boundary rather than floating above it */
+    font-size: 22px;
+    color: rgba(255, 255, 255, 0.85); /* Faint white to mimic steam */
+    text-shadow: 0 0 4px rgba(255,255,255,0.4);
+    pointer-events: none;
+    z-index: 10;
+    animation: puff-anim 1.5s forwards ease-out;
+}
+
+@keyframes puff-anim {
+    0% {
+        opacity: 0;
+        transform: translateY(0) scale(0.3) rotate(-10deg);
+    }
+    15% {
+        opacity: 1;
+        transform: translateY(-4px) scale(1.2) rotate(5deg);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(var(--puff-dist, -15px)) scale(1.6) rotate(20deg);
+    }
+}
+
+header p {
+    font-size: 14px;
+    font-weight: 400;
+    color: rgba(255,255,255,.85);
+    margin-top: 6px;
+    position: relative;
+}
+
+/* ── Section Cards ─────────────────────────────────── */
+section {
+    background: var(--md-surface);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-2);
+    border: 1px solid var(--md-outline);
+}
+
+section h2 {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--md-primary-dark);
+    margin-bottom: 16px;
+}
+
+/* ── Input Field ───────────────────────────────────── */
 .controls {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
-    margin-bottom: 20px;
+    align-items: center;
+    justify-content: center;
 }
 
 input[type="text"] {
-    flex: 1;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 16px;
+    flex: 1 1 180px;
+    font-family: 'Roboto', sans-serif;
+    font-size: 15px;
+    color: var(--md-on-surface);
+    background: var(--md-surface-variant);
+    border: 1.5px solid var(--md-outline-strong);
+    border-radius: var(--radius-full);
+    padding: 10px 18px;
+    outline: none;
+    transition: border-color .2s var(--ease-md), box-shadow .2s var(--ease-md);
+}
+
+input[type="text"]::placeholder {
+    color: var(--md-on-surface-dim);
+}
+
+input[type="text"]:focus {
+    border-color: var(--md-primary);
+    box-shadow: 0 0 0 3px var(--md-primary-lighter);
+}
+
+/* ── Add Player Modal Fields ───────────────────────── */
+.add-player-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    text-align: left;
+}
+
+.field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.field-label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+    color: var(--md-on-surface-sub);
+    padding-left: 4px;
+}
+
+/* Number input inherits the same pill style as text */
+input[type="number"] {
+    font-family: 'Roboto', sans-serif;
+    font-size: 15px;
+    color: var(--md-on-surface);
+    background: var(--md-surface-variant);
+    border: 1.5px solid var(--md-outline-strong);
+    border-radius: var(--radius-full);
+    padding: 10px 18px;
+    outline: none;
+    width: 100%;
+    -moz-appearance: textfield;
+    appearance: textfield;
+    transition: border-color .2s var(--ease-md), box-shadow .2s var(--ease-md);
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    opacity: 1;
+    margin-right: 6px;
+}
+
+input[type="number"]:focus {
+    border-color: var(--md-primary);
+    box-shadow: 0 0 0 3px var(--md-primary-lighter);
+}
+
+/* Full-width inputs inside the modal fields — prevent vertical stretch in column flex */
+.add-player-fields input {
+    width: 100%;
+    flex: 0 0 auto;  /* don't grow along the column axis */
+    height: 44px;    /* fixed height so it never balloons */
+}
+
+/* ── Buttons ───────────────────────────────────────── */
+
+/* Keyframes */
+@keyframes btn-bounce {
+    0%   { transform: scale(1); }
+    30%  { transform: scale(.92) scaleX(1.04); }
+    60%  { transform: scale(1.06) scaleX(.97); }
+    80%  { transform: scale(.98) scaleX(1.01); }
+    100% { transform: scale(1); }
+}
+
+@keyframes btn-stretch-click {
+    0%   { transform: scale(1); }
+    20%  { transform: scaleX(1.08) scaleY(.88); }
+    50%  { transform: scaleX(.95) scaleY(1.07); }
+    75%  { transform: scaleX(1.02) scaleY(.97); }
+    100% { transform: scale(1); }
 }
 
 button {
-    background-color: var(--primary);
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 4px;
-    cursor: pointer;
+    font-family: 'Roboto', sans-serif;
     font-size: 14px;
-    transition: background-color 0.2s;
+    font-weight: 500;
+    letter-spacing: .4px;
+    color: var(--md-on-primary);
+    background: var(--md-primary);
+    border: none;
+    border-radius: var(--radius-full);
+    padding: 10px 20px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: background-color .2s var(--ease-md),
+                box-shadow .2s var(--ease-md),
+                transform .15s var(--ease-md);
+    box-shadow: var(--shadow-1);
+    /* Prevent text selection on rapid clicks */
+    user-select: none;
+}
+
+/* Ripple layer */
+button::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0);
+    transition: background .3s;
+    border-radius: inherit;
 }
 
 button:hover {
-    background-color: var(--primary-dark);
+    background: var(--md-primary-dark);
+    box-shadow: var(--shadow-2);
+    transform: translateY(-1px);
 }
 
+/* Jiggle all button icons on hover — individual buttons may override */
+button:hover .material-icons {
+    animation: camera-jiggle .55s var(--ease-spring) forwards;
+}
+
+button:hover::after {
+    background: rgba(255,255,255,.08);
+}
+
+/* Bounce on click */
+button:active {
+    animation: btn-bounce .35s var(--ease-spring) forwards;
+    box-shadow: var(--shadow-1);
+}
+
+/* Danger variant */
 button.danger {
-    background-color: var(--danger);
+    background: var(--md-error);
 }
-
 button.danger:hover {
-    background-color: var(--danger-dark);
+    background: var(--md-error-dark);
 }
 
-ul {
-    list-style-type: none;
+/* Success / accept variant */
+button.success {
+    background: var(--md-primary-dark);
+    font-size: 15px;
+    font-weight: 700;
+}
+button.success:hover {
+    background: #2E7D32;
+}
+
+/* Outlined / ghost button */
+button.outlined {
+    background: transparent;
+    color: var(--md-primary);
+    border: 1.5px solid var(--md-primary);
+    box-shadow: none;
+}
+button.outlined:hover {
+    background: var(--md-primary-lighter);
+    box-shadow: none;
+}
+
+/* Capture button — teal info accent */
+button.capture-btn,
+#capture-btn {
+    background: var(--md-info);
+    min-width: 140px;
+}
+button.capture-btn:hover,
+#capture-btn:hover {
+    background: #1976D2;
+}
+
+/* Retake button — outlined */
+#retake-btn {
+    background: transparent;
+    color: var(--md-on-surface-sub);
+    border: 1.5px solid var(--md-outline-strong);
+    box-shadow: none;
+}
+#retake-btn:hover {
+    background: var(--md-surface-variant);
+}
+
+/* Remove / per-player danger */
+button.remove-btn {
+    background: transparent;
+    color: var(--md-error);
+    border: 1.5px solid var(--md-error);
+    padding: 7px 14px;
+    font-size: 13px;
+    box-shadow: none;
+}
+button.remove-btn:hover {
+    background: #FFEBEE;
+}
+
+/* Icon-only circular button — settings cog on player rows */
+button.icon-btn {
+    background: transparent;
+    color: var(--md-on-surface-dim);
+    border: 1.5px solid var(--md-outline);
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
     padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: none;
+    flex-shrink: 0;
+}
+button.icon-btn .material-icons {
+    font-size: 18px;
+    transition: transform .35s var(--ease-spring);
+}
+button.icon-btn:hover {
+    background: var(--md-primary-lighter);
+    border-color: var(--md-primary);
+    color: var(--md-primary-dark);
+    box-shadow: none;
+    transform: none; /* suppress the translateY lift */
+}
+/* Cog: suppress the global jiggle and spin instead */
+button.icon-btn:hover .material-icons {
+    animation: none;
+    transform: rotate(45deg);
+}
+
+/* Camera icon jiggle on hover */
+@keyframes camera-jiggle {
+    0%   { transform: rotate(0deg)   scale(1);    }
+    15%  { transform: rotate(-12deg) scale(1.1);  }
+    35%  { transform: rotate(10deg)  scale(1.08); }
+    55%  { transform: rotate(-7deg)  scale(1.05); }
+    70%  { transform: rotate(5deg)   scale(1.03); }
+    85%  { transform: rotate(-2deg)  scale(1.01); }
+    100% { transform: rotate(0deg)   scale(1);    }
+}
+
+button.camera-btn:hover {
+    background: #E3F2FD;       /* light blue tint */
+    border-color: var(--md-info);
+    color: var(--md-info);
+    transform: none;
+}
+button.camera-btn:hover .material-icons {
+    /* Equal specificity to icon-btn rule — must explicitly re-declare animation to override animation:none */
+    animation: camera-jiggle .55s var(--ease-spring) forwards;
+    transform: none;
+}
+
+/* Per-player capture icon button */
+button.capture-btn {
+    background: var(--md-info);
+    padding: 7px 16px;
+    font-size: 13px;
+}
+
+/* ── Player List ───────────────────────────────────── */
+ul {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 li {
-    background-color: var(--surface);
-    padding: 15px;
-    margin-bottom: 10px;
-    border-radius: 6px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background: var(--md-surface);
+    border: 1px solid var(--md-outline);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    box-shadow: var(--shadow-1);
+    transition: box-shadow .2s var(--ease-md), border-color .2s;
+}
+
+li:hover {
+    box-shadow: var(--shadow-2);
+    border-color: var(--md-outline-strong);
+}
+
+/* Leading avatar / rank badge */
+li .player-rank {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--md-primary-lighter);
+    color: var(--md-primary-dark);
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-right: 12px;
 }
 
 .player-info {
-    font-size: 18px;
-    font-weight: bold;
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+}
+
+.player-name {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--md-on-surface);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.player-score {
+    font-size: 14px;
+    color: var(--md-on-surface-sub);
+    margin-left: 10px;
+    white-space: nowrap;
 }
 
 .player-actions {
     display: flex;
-    gap: 10px;
+    gap: 8px;
+    flex-shrink: 0;
+    margin-left: 12px;
 }
 
-.capture-btn {
-    background-color: #2196F3;
-}
-
-.capture-btn:hover {
-    background-color: #1976D2;
-}
-
-.remove-btn {
-    background-color: var(--danger);
-}
-
-.remove-btn:hover {
-    background-color: var(--danger-dark);
-}
-
-/* Modal Styling */
+/* ── Modal ─────────────────────────────────────────── */
 .modal {
     display: none;
-    /* Hidden by default */
     position: fixed;
+    inset: 0;
     z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, .45);
     justify-content: center;
     align-items: center;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    animation: backdrop-in .2s var(--ease-md);
+}
+
+@keyframes backdrop-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
 }
 
 .modal.active {
@@ -137,41 +560,83 @@ li {
 }
 
 .modal-content {
-    background-color: #fefefe;
-    padding: 20px;
-    border-radius: 8px;
-    width: 90%;
-    max-width: 500px;
+    background: var(--md-surface);
+    border-radius: var(--radius-xl);
+    padding: 24px;
+    width: 92%;
+    max-width: 520px;
     text-align: center;
     position: relative;
+    box-shadow: var(--shadow-3);
+    animation: modal-in .3s var(--ease-spring);
+}
+
+@keyframes modal-in {
+    from { transform: scale(.92) translateY(16px); opacity: 0; }
+    to   { transform: scale(1)  translateY(0);     opacity: 1; }
+}
+
+.modal.closing {
+    animation: backdrop-out .2s var(--ease-md) forwards;
+}
+.modal.closing .modal-content {
+    animation: modal-out .2s var(--ease-md) forwards;
+}
+
+@keyframes backdrop-out {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+}
+
+@keyframes modal-out {
+    from { transform: scale(1) translateY(0);     opacity: 1; }
+    to   { transform: scale(.92) translateY(16px); opacity: 0; }
+}
+
+.modal-content h2 {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--md-on-surface);
+    margin-bottom: 14px;
+    text-transform: none;
+    letter-spacing: 0;
 }
 
 .close-btn {
     position: absolute;
-    top: 10px;
-    right: 15px;
-    color: #aaa;
-    font-size: 28px;
-    font-weight: bold;
+    top: 14px;
+    right: 18px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 22px;
+    font-weight: 400;
+    line-height: 1;
+    color: var(--md-on-surface-dim);
     cursor: pointer;
+    background: transparent;
+    transition: background .15s, color .15s;
+    user-select: none;
 }
 
-.close-btn:hover,
-.close-btn:focus {
-    color: black;
-    text-decoration: none;
-    cursor: pointer;
+.close-btn:hover {
+    background: var(--md-surface-variant);
+    color: var(--md-on-surface);
 }
 
+/* ── Camera Container ──────────────────────────────── */
 #camera-container {
     position: relative;
     width: 100%;
     aspect-ratio: 4/3;
-    /* Standard webcam ratio */
-    background-color: #000;
-    margin-bottom: 15px;
-    border-radius: 4px;
+    background: #0d1b0e;
+    border-radius: var(--radius-md);
     overflow: hidden;
+    margin-bottom: 16px;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.05);
 }
 
 video,
@@ -188,39 +653,50 @@ canvas {
     display: none !important;
 }
 
+/* ── Modal Controls ────────────────────────────────── */
 .modal-controls {
     display: flex;
     justify-content: center;
+    flex-wrap: wrap;
     gap: 10px;
-    margin-top: 10px;
+    margin-top: 12px;
 }
 
-button.success {
-    background-color: var(--primary);
-    font-size: 16px;
-    font-weight: bold;
+/* ── Status Message ────────────────────────────────── */
+#status-message {
+    font-size: 13px;
+    font-style: italic;
+    color: var(--md-on-surface-dim);
+    margin-top: 12px;
+    min-height: 1.5em;
+    transition: color .2s;
 }
 
-/* === Detection Mode Toggle === */
+/* ── Detection Mode Toggle ─────────────────────────── */
 #detection-mode-toggle {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
+    padding: 8px 14px;
+    background: var(--md-surface-variant);
+    border-radius: var(--radius-full);
+    border: 1px solid var(--md-outline);
 }
 
 .mode-label {
     font-size: 13px;
-    font-weight: 600;
-    color: #999;
-    transition: color 0.2s;
+    font-weight: 500;
+    color: var(--md-on-surface-dim);
+    transition: color .2s;
 }
 
 .mode-label.active {
-    color: var(--primary-dark);
+    color: var(--md-primary-dark);
 }
 
+/* Toggle switch */
 .toggle-switch {
     position: relative;
     display: inline-block;
@@ -237,92 +713,96 @@ button.success {
 .toggle-slider {
     position: absolute;
     cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
+    inset: 0;
+    background: #B0BEC5;
     border-radius: 26px;
-    transition: background-color 0.3s;
+    transition: background-color .3s var(--ease-md);
 }
 
 .toggle-slider::before {
-    content: "";
+    content: '';
     position: absolute;
     height: 20px;
     width: 20px;
     left: 3px;
     bottom: 3px;
-    background-color: white;
+    background: #fff;
     border-radius: 50%;
-    transition: transform 0.3s;
+    box-shadow: var(--shadow-1);
+    transition: transform .3s var(--ease-spring);
 }
 
-.toggle-switch input:checked+.toggle-slider {
-    background-color: var(--primary);
+.toggle-switch input:checked + .toggle-slider {
+    background: var(--md-primary);
 }
 
-.toggle-switch input:checked+.toggle-slider::before {
+.toggle-switch input:checked + .toggle-slider::before {
     transform: translateX(22px);
 }
 
-#status-message {
-    font-style: italic;
-    color: #666;
-    margin-top: 10px;
-}
-
-/* === Debug Log Panel === */
-#log-panel-container {
+/* ── Debug Log Tile (fixed bottom sheet) ──────────── */
+.log-tile {
     position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 2000;
-    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
-    font-size: 12px;
-}
-
-#log-panel-header {
+    /* Sit directly above the FAB (52px tall + 24px bottom + 8px gap = 84px) */
+    bottom: 84px;
+    left: 50%;
+    transform: translateX(-50%);
+    /* Match the app container width */
+    width: calc(100% - 32px);
+    max-width: 620px;
+    /* Fill from its top down to its bottom anchor */
+    max-height: calc(100vh - 160px);
+    z-index: 1400;
+    background: var(--md-surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--md-outline);
+    box-shadow: var(--shadow-3);
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #1e1e1e;
-    padding: 4px 10px;
-    border-top: 2px solid #4CAF50;
-}
-
-#log-panel-header button {
-    background: transparent;
-    color: #aaa;
-    border: 1px solid #555;
-    padding: 3px 10px;
-    font-size: 11px;
-    cursor: pointer;
-    border-radius: 3px;
-}
-
-#log-panel-header button:hover {
-    background: #333;
-    color: #fff;
-}
-
-#log-panel {
-    background: #1e1e1e;
-    max-height: 250px;
+    flex-direction: column;
     overflow: hidden;
-    transition: max-height 0.3s ease;
+    /* Slide in/out — no max-height so the page never reflows */
+    transition: transform .35s var(--ease-md),
+                opacity   .25s var(--ease-md);
+    opacity: 1;
 }
 
-#log-panel.collapsed {
-    max-height: 0;
+.log-tile.collapsed {
+    /* Slide the whole sheet down below the viewport */
+    transform: translateX(-50%) translateY(calc(100% + 96px));
+    opacity: 0;
+    pointer-events: none;
 }
 
+/* Header row inside the tile */
+.log-tile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px 0;
+    flex-shrink: 0; /* never compress the header */
+}
+
+.log-tile-header h2 {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--md-primary-dark);
+    margin-bottom: 0;
+}
+
+/* Scrollable terminal area — fills all remaining tile height */
 #log-output {
-    padding: 6px 10px;
-    max-height: 240px;
-    overflow-y: auto;
-    color: #ccc;
+    font-family: 'Roboto Mono', 'Cascadia Code', monospace;
+    font-size: 12px;
+    background: #1A2B1B;
+    border-radius: var(--radius-lg);
+    margin: 10px 0 0;
+    padding: 10px 14px;
+    flex: 1;           /* grow to fill remaining tile height     */
+    min-height: 0;     /* required for flex children to shrink   */
+    overflow-y: auto;  /* scrolls internally, page stays stable  */
+    color: #A5D6A7;
 }
 
 .log-entry {
@@ -334,38 +814,76 @@ button.success {
     word-break: break-word;
 }
 
-.log-time {
-    color: #666;
-    flex-shrink: 0;
+.log-time  { color: #4E7050; flex-shrink: 0; }
+.log-level { flex-shrink: 0; font-weight: 700; min-width: 55px; }
+.log-msg   { flex: 1; }
+
+.log-debug .log-msg { color: #69946A; }
+.log-info  .log-msg { color: #A5D6A7; }
+.log-warn  .log-msg { color: var(--md-warning); }
+.log-error .log-msg { color: var(--md-error); }
+
+/* ── Log FAB ───────────────────────────────────────── */
+#log-fab {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 1500;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--md-primary);
+    color: var(--md-on-primary);
+    border: none;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 14px rgba(102,187,106,.45), var(--shadow-2);
+    cursor: pointer;
+    transition: background .2s var(--ease-md),
+                box-shadow .2s var(--ease-md),
+                transform  .2s var(--ease-md);
 }
 
-.log-level {
-    flex-shrink: 0;
-    font-weight: bold;
-    min-width: 55px;
+#log-fab .material-icons {
+    font-size: 24px;
+    transition: transform .25s var(--ease-spring);
 }
 
-.log-msg {
-    flex: 1;
+#log-fab:hover {
+    background: var(--md-primary-dark);
+    box-shadow: 0 6px 20px rgba(56,142,60,.5), var(--shadow-3);
+    transform: translateY(-2px) scale(1.06);
 }
 
-.log-debug .log-msg {
-    color: #888;
+/* Pulse ring to draw attention */
+#log-fab::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 2px solid var(--md-primary-light);
+    opacity: 0;
+    animation: fab-pulse 2.4s var(--ease-md) infinite 1.5s;
 }
 
-.log-info .log-msg {
-    color: #ccc;
+@keyframes fab-pulse {
+    0%   { transform: scale(1);    opacity: .6; }
+    70%  { transform: scale(1.35); opacity: 0;  }
+    100% { transform: scale(1.35); opacity: 0;  }
 }
 
-.log-warn .log-msg {
-    color: #FF9800;
-}
-
-.log-error .log-msg {
-    color: #f44336;
-}
-
-/* Add padding to body so log panel doesn't overlap content */
-body {
-    padding-bottom: 60px;
+/* ── Responsive tweaks ─────────────────────────────── */
+@media (max-width: 480px) {
+    header h1   { font-size: 22px; }
+    .controls   { flex-direction: column; align-items: stretch; }
+    /* Prevent the input from growing along the column (vertical) axis */
+    input[type="text"] {
+        flex: 0 0 auto;   /* don't grow/shrink vertically in column layout */
+        width: 100%;
+        height: 44px;     /* fixed height matches button height */
+    }
+    button      { width: 100%; text-align: center; }
+    .player-actions { flex-direction: column; gap: 6px; }
 }

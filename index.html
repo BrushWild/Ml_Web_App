@@ -4,87 +4,416 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GitHub Pages Domino Recognition</title>
+    <meta name="description"
+        content="Domino Recognition — score your dominoes automatically with on-device machine learning.">
+    <title>Domino Recognition</title>
     <!-- ONNX Runtime Web via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
-    <link rel="stylesheet" href="css/style.css">
+    <!-- Material Icons -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <!-- Material Design — Pastel Green Light Theme -->
+    <link rel="stylesheet" href="../css/style.css">
 </head>
 
 <body>
     <div id="app-container">
+
+        <!-- ── App Header ──────────────────────────── -->
         <header>
-            <h1>Domino Recognition</h1>
-            <p>Score your dominos automatically using machine learning!</p>
+            <img class="train-animated" src="assets/images/train-white.png" alt="Train Icon">
+            <h1>
+                Domino Vision
+                <!-- <span class="domino-icon">🁣</span> Domino Vision <span class="domino-icon">🁣</span> -->
+            </h1>
+            <!-- <p>Score your dominoes automatically using machine learning!</p> -->
         </header>
 
+        <!-- <header
+            class="w-full top-0 sticky z-50 bg-[#f8faf2] dark:bg-[#1a1c18] flex items-center justify-between px-6 py-4">
+            <div class="w-10"></div>
+            <h1 class="font-['Inter'] font-bold tracking-tight text-xl text-[#2e342b] dark:text-[#e1e3da]">
+                Domino Vision
+            </h1>
+            <div class="w-10"></div>
+        </header> -->
+
         <main>
+            <!-- ── Game Setup Card ─────────────────── -->
             <section id="game-setup">
-                <h2>Game Setup</h2>
+                <h2>Edit Players</h2>
                 <div class="controls">
-                    <input type="text" id="new-player-name" placeholder="Enter player name">
-                    <button id="add-player-btn">Add Player</button>
-                    <button id="reset-scores-btn">Reset Scores</button>
-                    <button id="clear-players-btn" class="danger">Clear List</button>
+                    <button id="add-player-btn">
+                        <span class="material-icons"
+                            style="font-size:16px;vertical-align:-3px;margin-right:4px;">person_add</span>
+                        Add Player
+                    </button>
+                    <button id="reset-scores-btn" class="outlined">
+                        <span class="material-icons"
+                            style="font-size:16px;vertical-align:-3px;margin-right:4px;">refresh</span>
+                        Reset Scores
+                    </button>
+                    <button id="clear-players-btn" class="danger">
+                        <span class="material-icons"
+                            style="font-size:16px;vertical-align:-3px;margin-right:4px;">delete_sweep</span>
+                        Clear List
+                    </button>
                 </div>
             </section>
 
+            <!-- ── Scoreboard Card ─────────────────── -->
             <section id="scoreboard">
-                <h2>Leaderboard</h2>
+                <h2>Scoreboard</h2>
                 <ul id="player-list">
-                    <!-- Player items will be injected here via JavaScript -->
+                    <!-- Player items injected by JavaScript -->
                 </ul>
             </section>
         </main>
 
-        <!-- Camera / Validation Modal -->
-        <div id="camera-modal" class="modal">
+        <!-- ── Camera / Scoring Modal ─────────────── -->
+        <div id="camera-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
             <div class="modal-content">
-                <span class="close-btn" id="close-modal-btn">&times;</span>
-                <h2>Capture Score for <span id="current-player-name">Player</span></h2>
+                <span class="close-btn" id="close-modal-btn" role="button" aria-label="Close modal">&times;</span>
 
+                <h2 id="modal-title">
+                    Capture Score for
+                    <span id="current-player-name" style="color:var(--md-primary-dark);">Player</span>
+                </h2>
+
+                <!-- Detection mode toggle -->
                 <div id="detection-mode-toggle">
                     <span class="mode-label" id="mode-label-single">Single-Pass</span>
-                    <label class="toggle-switch">
+                    <label class="toggle-switch" title="Toggle detection mode">
                         <input type="checkbox" id="two-pass-toggle">
                         <span class="toggle-slider"></span>
                     </label>
                     <span class="mode-label" id="mode-label-twopass">Two-Pass Crop</span>
                 </div>
 
+                <!-- Live camera feed / result canvas -->
                 <div id="camera-container">
-                    <!-- Live Camera Feed -->
                     <video id="webcam" autoplay playsinline></video>
-                    <!-- Captured Image and ML Bounding Boxes Overlay -->
                     <canvas id="overlay-canvas" class="hidden"></canvas>
                 </div>
 
+                <!-- Action buttons -->
                 <div class="modal-controls">
-                    <button id="capture-btn">Capture & Score</button>
-                    <button id="retake-btn" class="hidden">Retake</button>
-                    <button id="accept-score-btn" class="hidden success">Accept Score: <span
-                            id="calculated-score">0</span></button>
+                    <button id="capture-btn">
+                        <span class="material-icons"
+                            style="font-size:16px;vertical-align:-3px;margin-right:4px;">photo_camera</span>
+                        Capture &amp; Score
+                    </button>
+                    <button id="retake-btn" class="hidden">
+                        <span class="material-icons"
+                            style="font-size:16px;vertical-align:-3px;margin-right:4px;">replay</span>
+                        Retake
+                    </button>
+                    <button id="accept-score-btn" class="hidden success">
+                        <span class="material-icons"
+                            style="font-size:16px;vertical-align:-3px;margin-right:4px;">check_circle</span>
+                        Accept Score:&nbsp;<span id="calculated-score">0</span>
+                    </button>
                 </div>
 
-                <p id="status-message">Loading camera...</p>
+                <p id="status-message">Loading camera…</p>
+            </div>
+        </div>
+
+        <!-- ── Add Player Modal ───────────────────────── -->
+        <div id="add-player-modal" class="modal" role="dialog" aria-modal="true"
+            aria-labelledby="add-player-modal-title">
+            <div class="modal-content">
+                <span class="close-btn" id="close-add-player-modal-btn" role="button" aria-label="Close">&#xD7;</span>
+
+                <h2 id="add-player-modal-title" style="margin-bottom:20px;">
+                    <span class="material-icons"
+                        style="font-size:20px;vertical-align:-4px;margin-right:6px;color:var(--md-primary);">person_add</span>
+                    Add New Player
+                </h2>
+
+                <div class="add-player-fields">
+                    <div class="field-group">
+                        <label class="field-label" for="modal-player-name">Player Name</label>
+                        <input type="text" id="modal-player-name" placeholder="Enter player name…" autocomplete="off">
+                    </div>
+                    <div class="field-group">
+                        <label class="field-label" for="modal-player-score">Starting Score</label>
+                        <input type="number" id="modal-player-score" placeholder="0" value="0" min="0">
+                    </div>
+                </div>
+
+                <div class="modal-controls" style="margin-top:20px;">
+                    <button id="add-player-cancel-btn" class="outlined">
+                        <span class="material-icons"
+                            style="font-size:16px;vertical-align:-3px;margin-right:4px;">close</span>
+                        Cancel
+                    </button>
+                    <button id="add-player-confirm-btn">
+                        <span class="material-icons"
+                            style="font-size:16px;vertical-align:-3px;margin-right:4px;">check</span>
+                        Confirm
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /#app-container -->
+
+    <!-- ── Edit Player Modal ──────────────────────── -->
+    <div id="edit-player-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="edit-player-modal-title">
+        <div class="modal-content">
+            <span class="close-btn" id="close-edit-player-modal-btn" role="button" aria-label="Close">&#xD7;</span>
+
+            <h2 id="edit-player-modal-title" style="margin-bottom:20px;">
+                <span class="material-icons"
+                    style="font-size:20px;vertical-align:-4px;margin-right:6px;color:var(--md-primary);">settings</span>
+                Edit Player
+            </h2>
+
+            <div class="add-player-fields">
+                <div class="field-group">
+                    <label class="field-label" for="edit-player-name">Player Name</label>
+                    <input type="text" id="edit-player-name" placeholder="Player name…" autocomplete="off">
+                </div>
+                <div class="field-group">
+                    <label class="field-label" for="edit-player-score">Score</label>
+                    <input type="number" id="edit-player-score" placeholder="0" value="0" min="0">
+                </div>
+            </div>
+
+            <div class="modal-controls" style="margin-top:20px;">
+                <button id="edit-player-delete-btn" class="danger icon-left">
+                    <span class="material-icons"
+                        style="font-size:16px;vertical-align:-3px;margin-right:4px;">delete</span>
+                    Delete
+                </button>
+                <button id="edit-player-cancel-btn" class="outlined">
+                    <span class="material-icons"
+                        style="font-size:16px;vertical-align:-3px;margin-right:4px;">close</span>
+                    Cancel
+                </button>
+                <button id="edit-player-confirm-btn">
+                    <span class="material-icons"
+                        style="font-size:16px;vertical-align:-3px;margin-right:4px;">check</span>
+                    Confirm
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Debug Log Panel -->
-    <div id="log-panel-container">
-        <div id="log-panel-header">
-            <button id="log-toggle-btn">Show Logs ▲</button>
-            <button id="log-clear-btn">Clear</button>
-        </div>
-        <div id="log-panel" class="collapsed">
-            <div id="log-output"></div>
-        </div>
-    </div>
 
-    <!-- Application Logic -->
-    <script src="js/logger.js"></script>
-    <script src="js/vision.js"></script>
-    <script src="js/app.js"></script>
+    </div><!-- /#app-container -->
+
+    <!-- ── Debug Log Tile (fixed bottom sheet) ─────── -->
+    <section id="log-section" class="log-tile collapsed" aria-label="Debug Log">
+        <div class="log-tile-header">
+            <h2>
+                <span class="material-icons"
+                    style="font-size:15px;vertical-align:-2px;margin-right:6px;">terminal</span>
+                Debug Log
+            </h2>
+            <button id="log-clear-btn" class="outlined" style="padding:5px 12px;font-size:12px;">
+                <span class="material-icons"
+                    style="font-size:14px;vertical-align:-2px;margin-right:3px;">delete_sweep</span>
+                Clear
+            </button>
+        </div>
+        <div id="log-output"></div>
+    </section>
+
+    <!-- ── Log FAB — fixed bottom-right toggle ─────────── -->
+    <button id="log-fab" title="Toggle Debug Log" aria-label="Toggle Debug Log">
+        <span class="material-icons" id="log-fab-icon">terminal</span>
+    </button>
+
+    <!-- ── Application Scripts ────────────────────── -->
+    <script src="../js/logger.js"></script>
+    <script src="../js/vision.js"></script>
+    <script src="../js/app.js"></script>
+
+    <!-- ── Button stretch-on-click micro-animation ── -->
+    <script>
+        document.addEventListener('mousedown', function (e) {
+            const btn = e.target.closest('button');
+            if (!btn || btn.id === 'log-fab') return;
+            btn.style.animation = 'none';
+            void btn.offsetWidth;
+            btn.style.animation = '';
+        });
+    </script>
+
+    <!-- ── Domino Icon Cycler ─────────────────────── -->
+    <script>
+        (function () {
+            const icons = document.querySelectorAll('.domino-icon');
+            if (!icons.length) return;
+            setInterval(() => {
+                icons.forEach(icon => {
+                    // Domino tile unicode range: 127024 (0x1F030) to 127123 (0x1F093)
+                    const randomCodePoint = Math.floor(Math.random() * (127123 - 127024 + 1)) + 127024;
+                    icon.textContent = String.fromCodePoint(randomCodePoint);
+
+                    // Reset and forcefully trigger the jiggle animation
+                    icon.style.animation = 'none';
+                    void icon.offsetWidth; // trigger layout reflow
+                    icon.style.animation = 'camera-jiggle 0.55s var(--ease-spring) forwards';
+                });
+            }, 2000);
+        })();
+    </script>
+
+    <!-- ── Train Smoke Puffs ──────────────────────── -->
+    <script>
+        (function () {
+            const header = document.querySelector('header');
+            const train = document.querySelector('.train-animated');
+            if (!header || !train) return;
+
+            function scheduleNextPuff() {
+                // Random interval strictly between 1000ms (1s) and 1500ms (1.5s)
+                const delay = Math.floor(Math.random() * 500) + 1000;
+
+                setTimeout(() => {
+                    const headerRect = header.getBoundingClientRect();
+                    const trainRect = train.getBoundingClientRect();
+
+                    // Assess exactly where the train currently resides
+                    const progress = (trainRect.left - headerRect.left) / headerRect.width;
+
+                    // Exclusively trigger the puff if the train is genuinely sweeping visually across the layout
+                    // Progress bounds (-0.1 to 0.95) shield tracking against puffing during its offscreen reset hold
+                    if (progress > -0.1 && progress < 0.95) {
+                        spawnPuff(trainRect.left - headerRect.left, headerRect.height);
+                    }
+
+                    // Queue the next loop regardless
+                    scheduleNextPuff();
+                }, delay);
+            }
+
+            function spawnPuff(trainX, headerHeight) {
+                // Instantly trigger a subtle squish-and-stretch "chug" animation directly on the train node
+                // (using JS Web Animations API avoids overriding the CSS 'left' tracking animation)
+                train.animate([
+                    { transform: 'translateY(0) scale(1)', transformOrigin: 'bottom center', offset: 0 },
+                    { transform: 'translateY(2px) scaleY(0.85) scaleX(1.05)', transformOrigin: 'bottom center', offset: 0.3 },
+                    { transform: 'translateY(-4px) scaleY(1.1) scaleX(0.95)', transformOrigin: 'bottom center', offset: 0.6 },
+                    { transform: 'translateY(0) scale(1)', transformOrigin: 'bottom center', offset: 1 }
+                ], {
+                    duration: 350,
+                    easing: 'cubic-bezier(0.25, 1, 0.5, 1)'
+                });
+
+                const puff = document.createElement('div');
+                puff.className = 'domino-puff';
+
+                // Fetch a random domino unicode character from the entire range
+                const randomPuff = Math.floor(Math.random() * (127123 - 127024 + 1)) + 127024;
+                puff.textContent = String.fromCodePoint(randomPuff);
+
+                // Horizontally align puff generally with the middle/front of the train icon
+                puff.style.left = (trainX + 24) + 'px';
+
+                // Translate up strictly 30% of the header height mathematically (roughly twice as far as before)
+                const driftDistance = headerHeight * 0.30;
+                puff.style.setProperty('--puff-dist', `-${driftDistance}px`);
+
+                header.appendChild(puff);
+
+                // Safely wipe out after 1.5 seconds exactly when keyframe sequence ends
+                setTimeout(() => puff.remove(), 1500);
+            }
+
+            // Start tracking
+            scheduleNextPuff();
+        })();
+    </script>
+
+    <!-- ── Add Player Modal Logic ────────────────────── -->
+    <script>
+        (function () {
+            const modal = document.getElementById('add-player-modal');
+            const openBtn = document.getElementById('add-player-btn');
+            const closeBtn = document.getElementById('close-add-player-modal-btn');
+            const cancelBtn = document.getElementById('add-player-cancel-btn');
+            const confirmBtn = document.getElementById('add-player-confirm-btn');
+            const nameInput = document.getElementById('modal-player-name');
+            const scoreInput = document.getElementById('modal-player-score');
+
+            function openModal() {
+                nameInput.value = '';
+                
+                // Calculate the highest score among current players to set as default
+                let defaultScore = 0;
+                try {
+                    const players = JSON.parse(localStorage.getItem('dominoPlayers')) || [];
+                    if (players.length > 0) {
+                        defaultScore = Math.max(...players.map(p => p.score || 0));
+                    }
+                } catch (e) {
+                    console.error('Failed to parse players for score default', e);
+                }
+                
+                scoreInput.value = defaultScore.toString();
+                
+                modal.classList.add('active');
+                // Focus name field after animation settles
+                setTimeout(function () { nameInput.focus(); }, 120);
+            }
+
+            function closeModal() {
+                modal.classList.add('closing');
+                setTimeout(function () {
+                    modal.classList.remove('active', 'closing');
+                }, 200);
+            }
+
+            openBtn.addEventListener('click', openModal);
+            closeBtn.addEventListener('click', closeModal);
+            cancelBtn.addEventListener('click', closeModal);
+
+            // Close on backdrop click
+            modal.addEventListener('click', function (e) {
+                if (e.target === modal) closeModal();
+            });
+
+            // Close on Escape key
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && modal.classList.contains('active')) closeModal();
+            });
+
+            confirmBtn.addEventListener('click', function () {
+                const name = nameInput.value.trim();
+                const score = parseInt(scoreInput.value, 10) || 0;
+                if (!name) {
+                    nameInput.focus();
+                    nameInput.style.borderColor = 'var(--md-error)';
+                    nameInput.style.boxShadow = '0 0 0 3px #FFEBEE';
+                    return;
+                }
+                // Reset validation styles
+                nameInput.style.borderColor = '';
+                nameInput.style.boxShadow = '';
+
+                // Dispatch a custom event so app.js can react without coupling
+                document.dispatchEvent(new CustomEvent('addPlayer', {
+                    detail: { name, score }
+                }));
+
+                closeModal();
+            });
+
+            // Reset validation style when the user starts typing again
+            nameInput.addEventListener('input', function () {
+                nameInput.style.borderColor = '';
+                nameInput.style.boxShadow = '';
+            });
+
+            // Allow confirming with Enter key
+            nameInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') confirmBtn.click(); });
+            scoreInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') confirmBtn.click(); });
+        })();
+    </script>
+
 </body>
 
 </html>

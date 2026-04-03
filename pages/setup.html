@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Domino Vision - Game Setup</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed": "#d6e8ce",
+                        "on-primary-fixed-variant": "#0a6a1d",
+                        "surface-container": "#ebf0e5",
+                        "surface-container-low": "#f1f5eb",
+                        "primary-container": "#9df898",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-fixed": "#344331",
+                        "primary": "#116e20",
+                        "on-primary": "#eaffe2",
+                        "error-container": "#fd795a",
+                        "background": "#f8faf2",
+                        "secondary-dim": "#475744",
+                        "primary-fixed": "#9df898",
+                        "inverse-primary": "#9df898",
+                        "primary-dim": "#006117",
+                        "inverse-on-surface": "#9b9e97",
+                        "error": "#a73b21",
+                        "surface-tint": "#116e20",
+                        "surface-bright": "#f8faf2",
+                        "on-surface": "#2e342b",
+                        "on-tertiary-fixed-variant": "#6a6d37",
+                        "tertiary-dim": "#545622",
+                        "surface-variant": "#dee5d8",
+                        "on-secondary-container": "#465643",
+                        "on-error-container": "#6e1400",
+                        "tertiary-fixed-dim": "#edefac",
+                        "tertiary-fixed": "#fcfeb9",
+                        "outline-variant": "#adb4a8",
+                        "surface-container-highest": "#dee5d8",
+                        "secondary-fixed-dim": "#c7dac1",
+                        "tertiary-container": "#fcfeb9",
+                        "on-secondary-fixed-variant": "#50604c",
+                        "tertiary": "#60622d",
+                        "secondary-container": "#d6e8ce",
+                        "on-tertiary": "#fcfdb9",
+                        "on-tertiary-container": "#60622d",
+                        "on-tertiary-fixed": "#4d501d",
+                        "on-primary-container": "#006016",
+                        "on-error": "#fff7f6",
+                        "surface-dim": "#d5dccf",
+                        "on-primary-fixed": "#004b0f",
+                        "surface": "#f8faf2",
+                        "surface-container-high": "#e4eade",
+                        "error-dim": "#791903",
+                        "secondary": "#53634f",
+                        "inverse-surface": "#0c0f0b",
+                        "on-secondary": "#ecfee4",
+                        "on-surface-variant": "#5a6157",
+                        "on-background": "#2e342b",
+                        "primary-fixed-dim": "#90e98b",
+                        "outline": "#767d72"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "xxl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .scale-up-102:hover {
+            transform: scale(1.02);
+        }
+    </style>
+    <style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+
+<body class="bg-background text-on-surface font-body min-h-screen pb-32">
+    <!-- TopAppBar -->
+    <header class="w-full top-0 sticky z-50 bg-[#f8faf2] dark:bg-[#1a1c18] flex items-center justify-between px-6 py-4">
+        <div class="w-10"></div> <!-- Spacer for centering -->
+        <h1 class="font-['Inter'] font-bold tracking-tight text-xl text-[#2e342b] dark:text-[#e1e3da]">
+            Domino Vision
+        </h1>
+        <div class="w-10"></div> <!-- Spacer for centering -->
+    </header>
+    <main class="px-6 py-8 max-w-md mx-auto space-y-8">
+        <!-- Add Player Section -->
+        <section class="space-y-4">
+            <div class="bg-surface-container-low rounded-xxl p-6 space-y-4">
+                <div class="relative group">
+                    <label class="block text-xs font-label font-semibold text-on-surface-variant mb-1 ml-1">New Player
+                        Name</label>
+                    <input id="new-player-name"
+                        class="w-full bg-surface-container-highest border-none rounded-xl px-4 py-4 focus:ring-0 transition-all focus:scale-[1.02] text-on-surface placeholder-on-surface-variant/50"
+                        placeholder="Enter name..." type="text" />
+                    <div
+                        class="absolute bottom-0 left-0 w-full h-0.5 bg-primary transform scale-x-0 group-focus-within:scale-x-100 transition-transform duration-300">
+                    </div>
+                </div>
+                <button id="add-player-btn"
+                    class="w-full bg-gradient-to-r from-primary to-primary-dim text-on-primary rounded-full py-4 px-6 flex items-center justify-center gap-2 font-bold shadow-lg shadow-primary/10 active:scale-95 transition-transform">
+                    <span class="material-symbols-outlined">person_add</span>
+                    Add Player
+                </button>
+            </div>
+        </section>
+        <!-- Global Actions -->
+        <section class="grid grid-cols-2 gap-4">
+            <button id="reset-scores-btn"
+                class="bg-surface-container-high text-on-secondary-container rounded-xl py-4 px-2 font-semibold text-sm flex items-center justify-center gap-2 hover:bg-surface-container-highest transition-colors">
+                <span class="material-symbols-outlined text-sm">refresh</span>
+                Reset Scores
+            </button>
+            <button id="clear-players-btn"
+                class="bg-surface-container-high text-error rounded-xl py-4 px-2 font-semibold text-sm flex items-center justify-center gap-2 hover:bg-error/5 transition-colors">
+                <span class="material-symbols-outlined text-sm">delete_sweep</span>
+                Clear List
+            </button>
+        </section>
+        <!-- Active Players List -->
+        <section class="space-y-4">
+            <div class="flex items-center justify-between px-1">
+                <h2 class="text-xs font-black uppercase tracking-widest text-on-surface-variant">Active Players</h2>
+                <span id="player-count-badge"
+                    class="text-xs font-medium text-primary bg-primary-container px-2 py-0.5 rounded-full">0
+                    Players</span>
+            </div>
+            <div id="player-list" class="space-y-3">
+                <!-- Player cards rendered dynamically via JavaScript -->
+            </div>
+        </section>
+    </main>
+    <!-- BottomNavBar -->
+    <nav
+        class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pt-3 pb-8 bg-white/80 dark:bg-[#1a1c18]/80 backdrop-blur-xl shadow-[0_-4px_24px_rgba(46,52,43,0.06)] rounded-t-[1.5rem]">
+        <a class="flex flex-col items-center justify-center bg-[#dee5d8] dark:bg-[#41493d] text-[#002106] dark:text-[#e1e3da] rounded-2xl px-5 py-2 active:scale-95 transition-transform"
+            href="setup.html">
+            <span class="material-symbols-outlined">settings</span>
+            <span class="font-['Inter'] text-[12px] font-medium">Setup</span>
+        </a>
+        <a class="flex flex-col items-center justify-center text-[#41493d] dark:text-[#c1c9ba] px-5 py-2 hover:bg-[#f1f5eb] dark:hover:bg-[#2e342b] active:scale-95 transition-transform"
+            href="scoreboard.html">
+            <span class="material-symbols-outlined">leaderboard</span>
+            <span class="font-['Inter'] text-[12px] font-medium">Leaderboard</span>
+        </a>
+    </nav>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const newPlayerInput = document.getElementById('new-player-name');
+            const addPlayerBtn = document.getElementById('add-player-btn');
+            const resetScoresBtn = document.getElementById('reset-scores-btn');
+            const clearPlayersBtn = document.getElementById('clear-players-btn');
+            const playerListEl = document.getElementById('player-list');
+            const playerCountBadge = document.getElementById('player-count-badge');
+
+            let players = JSON.parse(localStorage.getItem('dominoPlayers')) || [];
+
+            const savePlayers = () => {
+                localStorage.setItem('dominoPlayers', JSON.stringify(players));
+            };
+
+            const escapeHtml = (str) => {
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            };
+
+            const renderPlayers = () => {
+                players = JSON.parse(localStorage.getItem('dominoPlayers')) || [];
+                playerListEl.innerHTML = '';
+
+                // Update badge
+                const count = players.length;
+                playerCountBadge.textContent = `${count} Player${count !== 1 ? 's' : ''}`;
+
+                if (count === 0) {
+                    playerListEl.innerHTML = `
+                    <div class="text-center py-10">
+                        <span class="material-symbols-outlined text-4xl text-outline-variant mb-2 block">group_add</span>
+                        <p class="text-sm text-on-surface-variant">No players added yet</p>
+                    </div>`;
+                    return;
+                }
+
+                players.forEach((player, index) => {
+                    const card = document.createElement('div');
+                    const bgClass = index % 2 === 0
+                        ? 'bg-surface-container-lowest hover:bg-surface-container-low'
+                        : 'bg-surface-container-low hover:bg-surface-container-high';
+                    card.className = `flex items-center justify-between p-4 ${bgClass} rounded-xxl transition-all`;
+                    card.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-secondary-container flex items-center justify-center text-primary">
+                            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">account_circle</span>
+                        </div>
+                        <div>
+                            <p class="font-bold text-on-surface tracking-tight">${escapeHtml(player.name)}</p>
+                            <p class="text-[10px] text-on-surface-variant font-medium">PLAYER ${String(index + 1).padStart(2, '0')}</p>
+                        </div>
+                    </div>
+                    <button data-remove="${player.id}"
+                        class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-error/10 hover:text-error transition-all">
+                        <span class="material-symbols-outlined text-lg">close</span>
+                    </button>`;
+                    playerListEl.appendChild(card);
+                });
+            };
+
+            const addPlayer = () => {
+                const name = newPlayerInput.value.trim();
+                if (!name) return;
+                players.push({ id: Date.now().toString(), name, score: 0 });
+                newPlayerInput.value = '';
+                savePlayers();
+                renderPlayers();
+            };
+
+            const removePlayer = (id) => {
+                players = players.filter(p => p.id !== id);
+                savePlayers();
+                renderPlayers();
+            };
+
+            const resetScores = () => {
+                players.forEach(p => p.score = 0);
+                savePlayers();
+                renderPlayers();
+            };
+
+            const clearPlayers = () => {
+                if (confirm('Are you sure you want to clear all players?')) {
+                    players = [];
+                    savePlayers();
+                    renderPlayers();
+                }
+            };
+
+            // Event listeners
+            addPlayerBtn.addEventListener('click', addPlayer);
+            newPlayerInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') addPlayer();
+            });
+            resetScoresBtn.addEventListener('click', resetScores);
+            clearPlayersBtn.addEventListener('click', clearPlayers);
+
+            // Delegation for remove buttons
+            playerListEl.addEventListener('click', (e) => {
+                const removeBtn = e.target.closest('[data-remove]');
+                if (removeBtn) {
+                    removePlayer(removeBtn.dataset.remove);
+                }
+            });
+
+            // Initial render
+            renderPlayers();
+        });
+    </script>
+</body>
+
+</html>

@@ -1,6 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
     // === DOM Elements ===
-    const newPlayerInput = document.getElementById("new-player-name");
     const addPlayerBtn = document.getElementById("add-player-btn");
     const resetScoresBtn = document.getElementById("reset-scores-btn");
     const clearPlayersBtn = document.getElementById("clear-players-btn");
@@ -19,9 +18,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const statusMessageEl = document.getElementById("status-message");
 
     // Log Panel Elements
-    const logToggleBtn = document.getElementById("log-toggle-btn");
-    const logPanel = document.getElementById("log-panel");
-    const logClearBtn = document.getElementById("log-clear-btn");
+    const logSection  = document.getElementById('log-section');
+    const logFab      = document.getElementById('log-fab');
+    const logFabIcon  = document.getElementById('log-fab-icon');
+    const logClearBtn = document.getElementById('log-clear-btn');
 
     // Detection Mode Toggle
     const twoPassToggle = document.getElementById("two-pass-toggle");
@@ -39,16 +39,19 @@ document.addEventListener("DOMContentLoaded", () => {
         localStorage.setItem('dominoPlayers', JSON.stringify(players));
     };
 
-    // === Log Panel Toggle ===
-    if (logToggleBtn && logPanel) {
-        logToggleBtn.addEventListener("click", () => {
-            logPanel.classList.toggle("collapsed");
-            logToggleBtn.textContent = logPanel.classList.contains("collapsed")
-                ? "Show Logs ▲" : "Hide Logs ▼";
+    // === Log FAB Toggle ===
+    if (logFab && logSection) {
+        logFab.addEventListener('click', () => {
+            const isCollapsed = logSection.classList.toggle('collapsed');
+            logFabIcon.textContent = isCollapsed ? 'terminal' : 'close';
+            if (!isCollapsed) {
+                // Scroll the log tile into view smoothly
+                logSection.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            }
         });
     }
     if (logClearBtn) {
-        logClearBtn.addEventListener("click", () => Logger.clear());
+        logClearBtn.addEventListener('click', () => Logger.clear());
     }
 
     Logger.info('App initialized.');
@@ -92,18 +95,21 @@ document.addEventListener("DOMContentLoaded", () => {
             actionsDiv.className = "player-actions";
 
             const captureBtn = document.createElement("button");
-            captureBtn.className = "capture-btn";
-            captureBtn.textContent = "Capture Score";
+            captureBtn.className = "icon-btn camera-btn";
+            captureBtn.title = "Capture Score";
+            captureBtn.innerHTML = '<span class="material-icons">photo_camera</span>';
             captureBtn.onclick = () => openCameraModal(player.id);
 
-            const removeBtn = document.createElement("button");
-            removeBtn.className = "remove-btn";
-            removeBtn.innerHTML = "&times;";
-            removeBtn.title = "Remove Player";
-            removeBtn.onclick = () => removePlayer(player.id);
+            const settingsBtn = document.createElement("button");
+            settingsBtn.className = "icon-btn";
+            settingsBtn.title = "Edit Player";
+            settingsBtn.innerHTML = '<span class="material-icons">settings</span>';
+            settingsBtn.onclick = () => {
+                document.dispatchEvent(new CustomEvent('openEditPlayer', { detail: { id: player.id } }));
+            };
 
             actionsDiv.appendChild(captureBtn);
-            actionsDiv.appendChild(removeBtn);
+            actionsDiv.appendChild(settingsBtn);
 
             li.appendChild(infoDiv);
             li.appendChild(actionsDiv);
@@ -111,14 +117,12 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     };
 
-    const addPlayer = () => {
-        const name = newPlayerInput.value.trim();
+    const addPlayer = (name, startScore = 0) => {
         if (name) {
-            players.push({ id: Date.now().toString(), name, score: 0 });
-            newPlayerInput.value = "";
+            players.push({ id: Date.now().toString(), name, score: startScore });
             savePlayers();
             renderPlayers();
-            Logger.info(`Player added: "${name}"`);
+            Logger.info(`Player added: "${name}" (starting score: ${startScore})`);
         }
     };
 
@@ -126,7 +130,87 @@ document.addEventListener("DOMContentLoaded", () => {
         players = players.filter(p => p.id !== id);
         savePlayers();
         renderPlayers();
+        Logger.info(`Player removed: id=${id}`);
     };
+
+    const editPlayer = (id, name, score) => {
+        const player = players.find(p => p.id === id);
+        if (player) {
+            player.name = name;
+            player.score = score;
+            savePlayers();
+            renderPlayers();
+            Logger.info(`Player updated: "${name}" score=${score}`);
+        }
+    };
+
+    // === Edit Player Modal ===
+    (() => {
+        const modal = document.getElementById('edit-player-modal');
+        const closeBtn = document.getElementById('close-edit-player-modal-btn');
+        const cancelBtn = document.getElementById('edit-player-cancel-btn');
+        const confirmBtn = document.getElementById('edit-player-confirm-btn');
+        const deleteBtn = document.getElementById('edit-player-delete-btn');
+        const nameInput = document.getElementById('edit-player-name');
+        const scoreInput = document.getElementById('edit-player-score');
+        let editingId = null;
+
+        function openModal(playerId) {
+            const player = players.find(p => p.id === playerId);
+            if (!player) return;
+            editingId = playerId;
+            nameInput.value = player.name;
+            scoreInput.value = player.score;
+            // Reset any validation state
+            nameInput.style.borderColor = '';
+            nameInput.style.boxShadow = '';
+            modal.classList.add('active');
+            setTimeout(() => nameInput.focus(), 120);
+        }
+
+        function closeModal() {
+            modal.classList.add('closing');
+            editingId = null;
+            setTimeout(() => modal.classList.remove('active', 'closing'), 200);
+        }
+
+        // Open via custom event dispatched from player rows
+        document.addEventListener('openEditPlayer', (e) => openModal(e.detail.id));
+
+        closeBtn.addEventListener('click', closeModal);
+        cancelBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.classList.contains('active')) closeModal();
+        });
+
+        confirmBtn.addEventListener('click', () => {
+            const name = nameInput.value.trim();
+            const score = parseInt(scoreInput.value, 10) || 0;
+            if (!name) {
+                nameInput.focus();
+                nameInput.style.borderColor = 'var(--md-error)';
+                nameInput.style.boxShadow = '0 0 0 3px #FFEBEE';
+                return;
+            }
+            editPlayer(editingId, name, score);
+            closeModal();
+        });
+
+        deleteBtn.addEventListener('click', () => {
+            if (editingId) {
+                removePlayer(editingId);
+                closeModal();
+            }
+        });
+
+        nameInput.addEventListener('input', () => {
+            nameInput.style.borderColor = '';
+            nameInput.style.boxShadow = '';
+        });
+        nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') confirmBtn.click(); });
+        scoreInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') confirmBtn.click(); });
+    })();
 
     const resetScores = () => {
         players.forEach(p => p.score = 0);
@@ -144,10 +228,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    // Event Listeners for Game Setup
-    addPlayerBtn.addEventListener("click", addPlayer);
-    newPlayerInput.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") addPlayer();
+    // Listen for the modal's custom event instead of reading the old inline input
+    document.addEventListener('addPlayer', (e) => {
+        addPlayer(e.detail.name, e.detail.score);
     });
     resetScoresBtn.addEventListener("click", resetScores);
     clearPlayersBtn.addEventListener("click", clearPlayers);
@@ -205,12 +288,13 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     const closeCameraModal = () => {
-        cameraModal.classList.remove("active");
+        cameraModal.classList.add("closing");
         if (currentVideoStream) {
             currentVideoStream.getTracks().forEach(track => track.stop());
             currentVideoStream = null;
         }
         currentPlayerIdForScore = null;
+        setTimeout(() => cameraModal.classList.remove("active", "closing"), 200);
         Logger.info('Camera modal closed.');
         Logger.groupEnd();
     };
