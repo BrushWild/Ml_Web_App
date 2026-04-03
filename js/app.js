@@ -309,7 +309,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             webcamEl.srcObject = currentVideoStream;
 
-            // Log video track details once metadata is loaded
+            // Log video track details and sync container aspect ratio once metadata loads
             webcamEl.addEventListener('loadedmetadata', () => {
                 const track = currentVideoStream.getVideoTracks()[0];
                 const settings = track.getSettings();
@@ -322,6 +322,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     videoWidth: webcamEl.videoWidth,
                     videoHeight: webcamEl.videoHeight,
                 });
+
+                // Dynamically match the container to the camera's actual aspect ratio
+                const cameraContainer = document.getElementById('camera-container');
+                if (cameraContainer && webcamEl.videoWidth && webcamEl.videoHeight) {
+                    cameraContainer.style.aspectRatio = `${webcamEl.videoWidth} / ${webcamEl.videoHeight}`;
+                    Logger.debug(`Container aspect ratio set to ${webcamEl.videoWidth}×${webcamEl.videoHeight}`);
+                }
             }, { once: true });
 
             Logger.info('Camera stream started.');
@@ -339,6 +346,9 @@ document.addEventListener("DOMContentLoaded", () => {
             currentVideoStream = null;
         }
         currentPlayerIdForScore = null;
+        // Reset container aspect ratio back to CSS default for next open
+        const cameraContainer = document.getElementById('camera-container');
+        if (cameraContainer) cameraContainer.style.aspectRatio = '';
         setTimeout(() => cameraModal.classList.remove("active", "closing"), 200);
         Logger.info('Camera modal closed.');
         Logger.groupEnd();

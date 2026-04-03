@@ -148,7 +148,7 @@
 
 /* Smooth Element Transitions */
 body,
-section,
+section:not(#log-section),
 ul li {
     transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease !important;
 }
@@ -216,7 +216,7 @@ header h1 {
     position: absolute;
     bottom: -2px;
     /* Slightly clipped at the bottom to look like it's resting on the edge */
-    height: 28px;
+    height: 34px;
     width: auto;
     opacity: 0.9;
     /* Total duration 8.25s: 8s to drive, 0.25s delay offscreen (approx 97% is 8/8.25) */
@@ -999,10 +999,10 @@ canvas {
     overflow: hidden;
     /* Slide in/out alongside theme color transitions */
     transition: transform .35s var(--ease-md),
-        opacity .25s var(--ease-md),
+        opacity .35s var(--ease-md),
         background-color 0.4s ease,
         border-color 0.4s ease,
-        box-shadow 0.4s ease;
+        box-shadow 0.4s ease !important;
     opacity: 1;
 }
 
