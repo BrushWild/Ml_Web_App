@@ -4,15 +4,15 @@
 This checklist is designed for AI agents to track progress across the 5 phases of migrating the Domino Vision app to a SpacetimeDB backend.
 
 ### **Phase 1: Backend Initialization & Schema**
-- [ ] Initialize a new SpacetimeDB Rust project in a `/server` directory using `spacetime init --lang rust`.
-- [ ] Create the `User` table with `identity` (PK) and `name` fields.
-- [ ] Create the `Lobby` table with `lobby_code` (PK) and `owner_id` fields.
-- [ ] Create the `Player` table with `player_id` (PK), `lobby_code`, `client_id`, `name`, and `score` fields.
-- [ ] Write the `update_user_name` reducer to upsert the user's name and update their `Player` record.
-- [ ] Write the `create_lobby` reducer to generate a lobby code, insert a `Lobby`, and add the caller as a `Player` with a score of `0`.
-- [ ] Write the `join_lobby` reducer to validate the lobby, remove the user from existing lobbies, and insert them as a `Player` with a score of `0`.
-- [ ] Write the `update_score` reducer, ensuring only the `client_id` or `owner_id` can modify it.
-- [ ] Write the `remove_player` reducer. Implement ownership transfer to the oldest remaining player if the owner leaves, or cascade delete the lobby if empty.
+- [x] Initialize a new SpacetimeDB Rust project in a `/server` directory using `spacetime init --lang rust`.
+- [x] Create the `User` table with `identity` (PK) and `name` fields.
+- [x] Create the `Lobby` table with `lobby_code` (PK) and `owner_id` fields.
+- [x] Create the `Player` table with `player_id` (PK), `lobby_code`, `client_id`, `name`, and `score` fields.
+- [x] Write the `update_user_name` reducer to upsert the user's name and update their `Player` record.
+- [x] Write the `create_lobby` reducer to generate a lobby code, insert a `Lobby`, and add the caller as a `Player` with a score of `0`.
+- [x] Write the `join_lobby` reducer to validate the lobby, remove the user from existing lobbies, and insert them as a `Player` with a score of `0`.
+- [x] Write the `update_score` reducer, ensuring only the `client_id` or `owner_id` can modify it.
+- [x] Write the `remove_player` reducer. Implement ownership transfer to the oldest remaining player if the owner leaves, or cascade delete the lobby if empty.
 
 ### **Phase 2: Build Pipeline & Bindings Setup**
 - [ ] Run `spacetime generate --lang typescript --out-dir js/stdb` to generate client bindings.
