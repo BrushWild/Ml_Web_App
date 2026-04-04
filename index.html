@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description"
         content="Domino Recognition — score your dominoes automatically with on-device machine learning.">
-    <title>Domino Recognition</title>
+    <title>Domino Vision</title>
     <!-- ONNX Runtime Web via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
     <!-- Material Icons -->
@@ -351,7 +351,7 @@
 
             function openModal() {
                 nameInput.value = '';
-                
+
                 // Calculate the highest score among current players to set as default
                 let defaultScore = 0;
                 try {
@@ -362,9 +362,9 @@
                 } catch (e) {
                     console.error('Failed to parse players for score default', e);
                 }
-                
+
                 scoreInput.value = defaultScore.toString();
-                
+
                 modal.classList.add('active');
                 // Focus name field after animation settles
                 setTimeout(function () { nameInput.focus(); }, 120);
