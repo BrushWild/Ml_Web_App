@@ -1,6 +1,6 @@
 services:
   context7-mcp:
-    image: mekayelanik/context7-mcp:stable
+    image: mekayelanik/context7-mcp:latest
     container_name: context7-mcp
     restart: unless-stopped
     ports:
