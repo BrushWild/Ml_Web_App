@@ -1,0 +1,1 @@
+C:\Users\asnea\Documents\Github\Ml_Web_App\server\domino-vision\spacetimedb\target\wasm32-unknown-unknown\release\domino_vision.wasm: C:\Users\asnea\Documents\Github\Ml_Web_App\server\domino-vision\spacetimedb\src\lib.rs

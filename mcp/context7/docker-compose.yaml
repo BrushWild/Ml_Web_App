@@ -1,0 +1,11 @@
+services:
+  context7-mcp:
+    image: mekayelanik/context7-mcp:stable
+    container_name: context7-mcp
+    restart: unless-stopped
+    ports:
+      - "8010:8010"
+    environment:
+      - PORT=8010
+      - CONTEXT7_API_KEY=${ENV_CONTEXT7_API_KEY}
+      - NODE_ENV=development
