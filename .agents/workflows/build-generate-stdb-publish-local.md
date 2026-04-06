@@ -2,6 +2,8 @@
 description: Refresh the spacetime db front and back stacks
 ---
 
+This workflow assumes that spacetime is already running via `spacetime start`
+
 #### Setup
 **Navigate** to the project directory containing the `spacetime.json` configuration file.
 
@@ -17,7 +19,5 @@ description: Refresh the spacetime db front and back stacks
    `npm run build-stdb`
 
 #### Publish
-**Start the Local Node:** Ensure a local SpacetimeDB instance is running in the background:
-   `spacetime start`
 **Publish the Module:** In a new terminal within the project directory, run:
    `spacetime publish domino-vision --server local --clear-database -y`

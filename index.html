@@ -294,6 +294,10 @@
                 <label class="field-label" for="create-owner-name">Your Player Name</label>
                 <input type="text" id="create-owner-name" placeholder="Enter your name..." autocomplete="off">
             </div>
+            <div class="field-group" style="text-align: left; margin-top: 16px;">
+                <label class="field-label" for="create-lobby-name">Lobby Name</label>
+                <input type="text" id="create-lobby-name" placeholder="e.g., Friday Night Game..." autocomplete="off">
+            </div>
             <div class="modal-controls" style="margin-top:24px;">
                 <button id="create-confirm-btn" class="success primary">
                     <span class="material-icons">check</span>
@@ -316,11 +320,26 @@
                     <label class="field-label" for="join-name">Your Player Name</label>
                     <input type="text" id="join-name" placeholder="Enter your name..." autocomplete="off">
                 </div>
-                <div class="field-group">
-                    <label class="field-label" for="join-code">Lobby Code</label>
-                    <input type="text" id="join-code" placeholder="ABCDE" maxlength="5" autocomplete="off"
-                        style="text-transform: uppercase; font-family: 'Roboto Mono', monospace; letter-spacing: 2px; text-align: center; font-size: 20px;">
+            </div>
+
+            <div class="lobby-browser-section" style="margin-top: 24px;">
+                <h3 style="font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--md-on-surface-dim); margin-bottom: 12px; display: flex; align-items: center;">
+                    <span class="material-icons" style="font-size: 16px; margin-right: 6px;">explore</span>
+                    Available Lobbies
+                </h3>
+                <div id="lobby-list" class="lobby-list">
+                    <div class="lobby-list-empty">Scanning for active lobbies...</div>
                 </div>
+            </div>
+
+            <div class="home-divider" style="margin: 24px 0 16px 0;">
+                <span>OR JOIN BY CODE</span>
+            </div>
+
+            <div class="field-group">
+                <label class="field-label" for="join-code">Private Lobby Code</label>
+                <input type="text" id="join-code" placeholder="ABCDE" maxlength="5" autocomplete="off"
+                    style="text-transform: uppercase; font-family: 'Roboto Mono', monospace; letter-spacing: 2px; text-align: center; font-size: 20px;">
             </div>
             <div class="modal-controls" style="margin-top:24px;">
                 <button id="join-confirm-btn" class="success primary">

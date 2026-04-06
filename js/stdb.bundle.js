@@ -7825,6 +7825,7 @@ function procedures(...args) {
 // js/stdb/create_lobby_reducer.ts
 var create_lobby_reducer_default = {
   userName: t.string(),
+  lobbyName: t.string(),
   codeArg: t.string()
 };
 
@@ -7853,6 +7854,7 @@ var update_user_name_reducer_default = {
 // js/stdb/lobby_table.ts
 var lobby_table_default = t.row({
   lobbyCode: t.string().primaryKey().name("lobby_code"),
+  lobbyName: t.string().name("lobby_name"),
   ownerId: t.identity().name("owner_id")
 });
 

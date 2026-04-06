@@ -12,5 +12,6 @@ import {
 
 export default {
   userName: __t.string(),
+  lobbyName: __t.string(),
   codeArg: __t.string(),
 };

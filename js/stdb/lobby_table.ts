@@ -12,5 +12,6 @@ import {
 
 export default __t.row({
   lobbyCode: __t.string().primaryKey().name("lobby_code"),
+  lobbyName: __t.string().name("lobby_name"),
   ownerId: __t.identity().name("owner_id"),
 });

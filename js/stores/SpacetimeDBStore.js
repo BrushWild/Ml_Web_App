@@ -64,10 +64,30 @@ export class SpacetimeDBStore extends GameStore {
 
         return {
             code: lobby.lobbyCode,
+            name: lobby.lobbyName,
             ownerId: typeof lobby.ownerId === 'string' ? lobby.ownerId : lobby.ownerId.toHexString(),
             isOwner: (typeof lobby.ownerId === 'string' ? lobby.ownerId : lobby.ownerId.toHexString()) ===
                 (typeof this.identity === 'string' ? this.identity : this.identity.toHexString())
         };
+    }
+
+    /** Get all available lobbies with player counts */
+    getAvailableLobbies() {
+        if (!this.conn || !this.conn.db || !this.conn.db.lobby) return [];
+
+        return Array.from(this.conn.db.lobby.iter()).map(lobby => {
+            return {
+                code: lobby.lobbyCode,
+                name: lobby.lobbyName,
+                playerCount: this.getPlayersInLobby(lobby.lobbyCode).length
+            };
+        });
+    }
+
+    /** Helper to get all players in a specific lobby by code */
+    getPlayersInLobby(lobbyCode) {
+        if (!this.conn || !this.conn.db || !this.conn.db.player) return [];
+        return Array.from(this.conn.db.player.iter()).filter(p => p.lobbyCode === lobbyCode);
     }
 
     getPlayers() {
@@ -101,20 +121,25 @@ export class SpacetimeDBStore extends GameStore {
 
     /** Lobby Reducers */
 
-    createLobby(name, code = "") {
-        if (!name || typeof name !== 'string' || name.trim() === "") {
-            console.error("SpacetimeDB: Cannot create lobby with an empty or invalid name");
+    createLobby(userName, lobbyName, code = "") {
+        if (!userName || userName.trim() === "") {
+            console.error("SpacetimeDB: Cannot create lobby without a user name");
+            return;
+        }
+        if (!lobbyName || lobbyName.trim() === "") {
+            console.error("SpacetimeDB: Cannot create lobby without a lobby name");
             return;
         }
 
-        const cleanName = name.trim();
+        const cleanUserName = userName.trim();
+        const cleanLobbyName = lobbyName.trim();
         const cleanCode = typeof code === 'string' ? code.trim() : "";
 
-        console.log(`SpacetimeDB: Creating lobby. Name: "${cleanName}", Code: "${cleanCode}"`);
+        console.log(`SpacetimeDB: Creating lobby. User: "${cleanUserName}", Lobby Name: "${cleanLobbyName}", Code (if set): "${cleanCode}"`);
 
-        // FIXED: Passing arguments as a single named object
         this.conn.reducers.createLobby({
-            userName: cleanName,
+            userName: cleanUserName,
+            lobbyName: cleanLobbyName,
             codeArg: cleanCode
         });
     }

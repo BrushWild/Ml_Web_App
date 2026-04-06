@@ -14,6 +14,7 @@ pub struct User {
 pub struct Lobby {
     #[primary_key]
     pub lobby_code: String,
+    pub lobby_name: String,
     pub owner_id: Identity,
 }
 
@@ -85,8 +86,13 @@ pub fn update_user_name(ctx: &ReducerContext, name: String) -> Result<(), String
 
 // FIXED: Swapped parameters to (name, code_arg) to match frontend
 #[reducer]
-pub fn create_lobby(ctx: &ReducerContext, user_name: String, code_arg: String) -> Result<(), String> {
-    log::info!("create_lobby called with user_name: '{}', code_arg: '{}'", user_name, code_arg);
+pub fn create_lobby(ctx: &ReducerContext, user_name: String, lobby_name: String, code_arg: String) -> Result<(), String> {
+    log::info!("create_lobby called with user_name: '{}', lobby_name: '{}', code_arg: '{}'", user_name, lobby_name, code_arg);
+    
+    if lobby_name.trim().is_empty() {
+        return Err("Lobby name cannot be empty".to_string());
+    }
+
     // Update user's name first
     update_user_name(ctx, user_name)?;
 
@@ -105,6 +111,7 @@ pub fn create_lobby(ctx: &ReducerContext, user_name: String, code_arg: String) -
     // Create the lobby
     ctx.db.lobby().insert(Lobby {
         lobby_code: lobby_code.clone(),
+        lobby_name: lobby_name.trim().to_string(),
         owner_id: ctx.sender(),
     });
 

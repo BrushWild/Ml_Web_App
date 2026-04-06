@@ -67,8 +67,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const settingsSaveBtn = document.getElementById("settings-save-btn");
 
         const createOwnerNameInput = document.getElementById("create-owner-name");
+        const createLobbyNameInput = document.getElementById("create-lobby-name");
         const joinNameInput = document.getElementById("join-name");
         const joinCodeInput = document.getElementById("join-code");
+        const lobbyListEl = document.getElementById("lobby-list");
         const serverUriInput = document.getElementById("server-uri");
 
         // === Game State ===
@@ -129,7 +131,10 @@ document.addEventListener("DOMContentLoaded", () => {
             if (mode === 'multiplayer') {
                 if (stdbConn && stdbIdentity) {
                     currentStore = new SpacetimeDBStore(stdbConn, stdbIdentity);
-                    currentStore.onUpdate(() => renderPlayers(currentStore.getPlayers()));
+                    currentStore.onUpdate(() => {
+                        renderPlayers(currentStore.getPlayers());
+                        renderLobbyList();
+                    });
                 } else {
                     Logger.error("SpacetimeDB not connected. Waiting for connection...");
                 }
@@ -272,11 +277,15 @@ document.addEventListener("DOMContentLoaded", () => {
         // Modal Confirmation Handlers
         createConfirmBtn?.addEventListener("click", () => {
             const name = createOwnerNameInput.value.trim();
-            if (!name) return;
+            const lobbyName = createLobbyNameInput?.value.trim();
+            if (!name || !lobbyName) {
+                Logger.error("Both player name and lobby name are required.");
+                return;
+            }
 
             setPlayMode("multiplayer");
             if (currentStore instanceof SpacetimeDBStore) {
-                currentStore.createLobby(name);
+                currentStore.createLobby(name, lobbyName);
                 createLobbyModal?.classList.remove("active");
             }
         });
@@ -333,6 +342,53 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Try to connect, but don't block app startup
         initSpacetime();
+
+        // === Lobby Management ===
+        const renderLobbyList = () => {
+            if (!lobbyListEl) return;
+            if (!(currentStore instanceof SpacetimeDBStore)) return;
+
+            const lobbies = currentStore.getAvailableLobbies();
+            if (!lobbies || lobbies.length === 0) {
+                lobbyListEl.innerHTML = '<div class="lobby-list-empty">Scanning for active lobbies...</div>';
+                return;
+            }
+
+            lobbyListEl.innerHTML = "";
+            lobbies.forEach(lobby => {
+                const item = document.createElement("div");
+                item.className = "lobby-item";
+                item.innerHTML = `
+                    <div class="lobby-item-info">
+                        <div class="lobby-item-name">${lobby.name}</div>
+                        <div class="lobby-item-meta">
+                            <span class="material-icons">person</span>
+                            ${lobby.playerCount} player${lobby.playerCount !== 1 ? 's' : ''}
+                        </div>
+                    </div>
+                    <button class="lobby-connect-btn" data-code="${lobby.code}">
+                        Connect
+                    </button>
+                `;
+                
+                const connectBtn = item.querySelector(".lobby-connect-btn");
+                connectBtn.addEventListener("click", () => {
+                    const userName = joinNameInput.value.trim();
+                    if (!userName) {
+                        alert("Please enter your player name first.");
+                        joinNameInput.focus();
+                        return;
+                    }
+                    const code = prompt(`Enter secret code for '${lobby.name}':`, "");
+                    if (code) {
+                        currentStore.joinLobby(userName, code.toUpperCase());
+                        joinLobbyModal?.classList.remove("active");
+                    }
+                });
+
+                lobbyListEl.appendChild(item);
+            });
+        };
 
         // === Player Management ===
         const renderPlayers = (players) => {
