@@ -18,14 +18,34 @@
 <body>
     <div id="app-container">
 
-        <!-- ── Home Screen Overlay ────────────────── -->
-        <div id="home-screen-overlay" class="overlay active">
-            <div class="home-content">
-                <div class="home-logo">
+
+
+        <!-- ── App Header ──────────────────────────── -->
+        <header>
+
+            <img class="train-animated" src="assets/images/train-white.png" alt="Train Icon">
+            <h1>
+                Domino Vision
+            </h1>
+        </header>
+
+        <!-- <header
+            class="w-full top-0 sticky z-50 bg-[#f8faf2] dark:bg-[#1a1c18] flex items-center justify-between px-6 py-4">
+            <div class="w-10"></div>
+            <h1 class="font-['Inter'] font-bold tracking-tight text-xl text-[#2e342b] dark:text-[#e1e3da]">
+                Domino Vision
+            </h1>
+            <div class="w-10"></div>
+        </header> -->
+
+        <main>
+            <!-- ── Home Screen Card ─────────────────── -->
+            <section id="home-screen" class="active">
+                <!-- <div class="home-logo">
                     <span class="domino-icon">🁣</span>
                     <h1>Domino Vision</h1>
                     <p>AI-Powered Domino Scoring</p>
-                </div>
+                </div> -->
                 <div class="home-actions">
                     <button id="play-local-btn" class="success primary">
                         <span class="material-icons">person</span>
@@ -45,34 +65,13 @@
                 </div>
                 <div class="home-footer">
                     <button id="open-settings-btn" class="icon-btn" title="Network Settings">
-                        <span class="material-icons">settings</span>
+                        <span class="material-icons">wifi_find</span>
+                    </button>
+                    <button id="home-log-btn" class="icon-btn" title="Toggle Debug Log">
+                        <span class="material-icons">terminal</span>
                     </button>
                 </div>
-            </div>
-        </div>
-
-        <!-- ── App Header ──────────────────────────── -->
-        <header>
-            <button id="header-home-btn" class="icon-btn" title="Back to Home"
-                style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: white; border-color: rgba(255,255,255,0.3); z-index: 20;">
-                <span class="material-icons">home</span>
-            </button>
-            <img class="train-animated" src="assets/images/train-white.png" alt="Train Icon">
-            <h1>
-                Domino Vision
-            </h1>
-        </header>
-
-        <!-- <header
-            class="w-full top-0 sticky z-50 bg-[#f8faf2] dark:bg-[#1a1c18] flex items-center justify-between px-6 py-4">
-            <div class="w-10"></div>
-            <h1 class="font-['Inter'] font-bold tracking-tight text-xl text-[#2e342b] dark:text-[#e1e3da]">
-                Domino Vision
-            </h1>
-            <div class="w-10"></div>
-        </header> -->
-
-        <main>
+            </section>
             <!-- ── Game Setup Card ─────────────────── -->
             <section id="game-setup">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
@@ -361,18 +360,23 @@
                     style="font-size:15px;vertical-align:-2px;margin-right:6px;">terminal</span>
                 Debug Log
             </h2>
-            <button id="log-clear-btn" class="outlined" style="padding:5px 12px;font-size:12px;">
-                <span class="material-icons"
-                    style="font-size:14px;vertical-align:-2px;margin-right:3px;">delete_sweep</span>
-                Clear
-            </button>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <button id="log-clear-btn" class="outlined" style="padding:5px 12px;font-size:12px;">
+                    <span class="material-icons"
+                        style="font-size:14px;vertical-align:-2px;margin-right:3px;">delete_sweep</span>
+                    Clear
+                </button>
+                <button id="log-close-btn" class="icon-btn" title="Close" style="width:28px; height:28px; border:none;">
+                    <span class="material-icons" style="font-size:18px;">close</span>
+                </button>
+            </div>
         </div>
         <div id="log-output"></div>
     </section>
 
     <!-- ── Log FAB — fixed bottom-right toggle ─────────── -->
-    <button id="log-fab" title="Toggle Debug Log" aria-label="Toggle Debug Log">
-        <span class="material-icons" id="log-fab-icon">terminal</span>
+    <button id="log-fab" title="Go Home" aria-label="Go Home">
+        <span class="material-icons" id="log-fab-icon">home</span>
     </button>
 
     <!-- ── Application Scripts ────────────────────── -->

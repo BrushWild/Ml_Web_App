@@ -31,6 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const logFab = document.getElementById('log-fab');
         const logFabIcon = document.getElementById('log-fab-icon');
         const logClearBtn = document.getElementById('log-clear-btn');
+        const logCloseBtn = document.getElementById('log-close-btn');
 
         // Detection Mode Toggle
         const twoPassToggle = document.getElementById("two-pass-toggle");
@@ -42,12 +43,14 @@ document.addEventListener("DOMContentLoaded", () => {
         const confirmScoreBtn = document.getElementById("confirm-score-btn");
 
         // Home Screen elements
-        const homeScreenOverlay = document.getElementById("home-screen-overlay");
+        const homeScreenSection = document.getElementById("home-screen");
+        const gameSetupSection = document.getElementById("game-setup");
+        const scoreboardSection = document.getElementById("scoreboard");
         const playLocalBtn = document.getElementById("play-local-btn");
         const hostLobbyBtn = document.getElementById("host-lobby-btn");
         const joinLobbyBtnHome = document.getElementById("join-lobby-btn-home");
         const openSettingsBtn = document.getElementById("open-settings-btn");
-        const headerHomeBtn = document.getElementById("header-home-btn");
+        const homeLogBtn = document.getElementById("home-log-btn");
 
         // Lobby Info
         const lobbyInfoRow = document.getElementById("lobby-info-row");
@@ -81,17 +84,20 @@ document.addEventListener("DOMContentLoaded", () => {
         let stdbConn = null;
         let stdbIdentity = null;
 
-        // === Log FAB Toggle ===
-        if (logFab && logSection) {
-            logFab.addEventListener('click', () => {
-                const isCollapsed = logSection.classList.toggle('collapsed');
-                logFabIcon.textContent = isCollapsed ? 'terminal' : 'close';
-                if (!isCollapsed) {
-                    const logOutput = document.getElementById('log-output');
-                    if (logOutput) logOutput.scrollTop = logOutput.scrollHeight;
-                }
-            });
-        }
+        // === Log Tile Toggle ===
+        const toggleLogTile = () => {
+            if (!logSection) return;
+            const isCollapsed = logSection.classList.toggle('collapsed');
+            // Log tile is now independent of the navigation FAB icon
+            if (!isCollapsed) {
+                const logOutput = document.getElementById('log-output');
+                if (logOutput) logOutput.scrollTop = logOutput.scrollHeight;
+            }
+        };
+
+        if (logFab) logFab.addEventListener('click', () => showView('home'));
+        if (homeLogBtn) homeLogBtn.addEventListener('click', toggleLogTile);
+        if (logCloseBtn) logCloseBtn.addEventListener('click', toggleLogTile);
         if (logClearBtn) {
             logClearBtn.addEventListener('click', () => Logger.clear());
         }
@@ -214,16 +220,29 @@ document.addEventListener("DOMContentLoaded", () => {
                 .build();
         };
 
+        // === Navigation Logic ===
+        const showView = (view) => {
+            console.log(`Navigating to view: ${view}`);
+            if (view === 'home') {
+                homeScreenSection?.classList.remove("hidden");
+                gameSetupSection?.classList.add("hidden");
+                scoreboardSection?.classList.add("hidden");
+                logFab?.classList.add("hidden");
+            } else if (view === 'game') {
+                homeScreenSection?.classList.add("hidden");
+                gameSetupSection?.classList.remove("hidden");
+                scoreboardSection?.classList.remove("hidden");
+                logFab?.classList.remove("hidden");
+            }
+        };
+
         // === Home Screen & Lobby Logic ===
-        headerHomeBtn?.addEventListener("click", () => {
-            console.log("Header Home button clicked");
-            homeScreenOverlay?.classList.add("active");
-        });
+
 
         playLocalBtn?.addEventListener("click", () => {
             console.log("Play Locally button clicked");
             setPlayMode("local");
-            homeScreenOverlay?.classList.remove("active");
+            showView('game');
         });
 
         hostLobbyBtn?.addEventListener("click", () => {
@@ -232,7 +251,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 Logger.error("Not connected to SpacetimeDB. Cannot host.");
                 return;
             }
-            homeScreenOverlay?.classList.remove("active");
+            showView('game');
             createLobbyModal?.classList.add("active");
         });
 
@@ -242,7 +261,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 Logger.error("Not connected to SpacetimeDB. Cannot join.");
                 return;
             }
-            homeScreenOverlay?.classList.remove("active");
+            showView('game');
             joinLobbyModal?.classList.add("active");
         });
 
@@ -279,7 +298,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 currentStore.leaveLobby();
             }
             setPlayMode("local");
-            homeScreenOverlay?.classList.add("active");
+            showView('home');
         });
 
         settingsSaveBtn?.addEventListener("click", () => {
@@ -297,17 +316,19 @@ document.addEventListener("DOMContentLoaded", () => {
         // Close buttons for new modals
         document.getElementById("close-create-modal-btn")?.addEventListener("click", () => {
             createLobbyModal?.classList.remove("active");
-            homeScreenOverlay?.classList.add("active");
+            showView('home');
         });
         document.getElementById("close-join-modal-btn")?.addEventListener("click", () => {
             joinLobbyModal?.classList.remove("active");
-            homeScreenOverlay?.classList.add("active");
+            showView('home');
         });
         document.getElementById("close-settings-modal-btn")?.addEventListener("click", () => settingsModal?.classList.remove("active"));
 
         // Ensure initial Home Screen state
         if (!localStorage.getItem('last_stdb_lobby_code')) {
-            homeScreenOverlay?.classList.add("active");
+            showView('home');
+        } else {
+            showView('game');
         }
 
         // Try to connect, but don't block app startup

@@ -902,74 +902,54 @@ canvas {
     display: none !important;
 }
 
-/* ── Home Screen Overlay ───────────────────────── */
-.overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 3000;
-    background: rgba(255, 255, 255, 0.4);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    animation: fade-in 0.4s ease-out;
-}
-
-[data-theme="dark"] .overlay {
-    background: rgba(18, 18, 18, 0.6);
-}
-
-.overlay.active {
-    display: flex;
-}
-
-.home-content {
-    background: var(--md-surface);
-    border-radius: var(--radius-xl);
-    padding: 48px 32px;
-    width: 100%;
-    max-width: 440px;
+/* ── Home Screen Card ───────────────────────── */
+#home-screen {
     text-align: center;
-    box-shadow: var(--shadow-3);
-    border: 1px solid var(--md-outline);
-    animation: modal-in 0.5s var(--ease-spring);
+    padding: 40px 24px;
+    background: var(--md-surface);
+    /* Subtle unique touch for the home card */
+    position: relative;
+    overflow: hidden;
 }
+
 
 .home-logo .domino-icon {
-    font-size: 64px;
+    font-size: 56px;
     color: var(--md-primary);
-    margin-bottom: 8px;
-    display: block;
+    margin-bottom: 12px;
+    display: inline-block;
 }
 
 .home-logo h1 {
-    font-size: 32px;
+    font-size: 28px;
     margin-bottom: 4px;
     color: var(--md-on-surface);
+    letter-spacing: -0.5px;
 }
 
 .home-logo p {
     font-size: 14px;
     color: var(--md-on-surface-sub);
-    margin-bottom: 48px;
+    margin-bottom: 32px;
 }
 
 .home-actions {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
+    max-width: 320px;
+    margin: 0 auto;
 }
 
 .home-divider {
     display: flex;
     align-items: center;
-    margin: 16px 0;
+    margin: 8px 0;
     color: var(--md-on-surface-dim);
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     letter-spacing: 1px;
+    text-transform: uppercase;
 }
 
 .home-divider::before,
@@ -978,12 +958,24 @@ canvas {
     flex: 1;
     height: 1px;
     background: var(--md-outline);
-    margin: 0 16px;
+    margin: 0 12px;
 }
 
 .home-footer {
-    margin-top: 48px;
+    margin-top: 32px;
+    display: flex;
+    justify-content: center;
+    gap: 16px;
 }
+
+/* Log close and home footer icons use jiggle instead of rotate */
+#log-close-btn:hover .material-icons,
+.home-footer .icon-btn:hover .material-icons {
+    animation: camera-jiggle .55s var(--ease-spring) forwards;
+    transform: none;
+}
+
+
 
 /* ── Lobby UI Elements ───────────────────────── */
 #lobby-info-row {
