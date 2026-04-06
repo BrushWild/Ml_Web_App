@@ -1,14 +1,12 @@
-// vision.js - Handles ONNX Runtime loading and Inference
+import { Logger } from './logger.js';
 
 let yoloModel = null;
-// Resolve model path relative to project root (works from any page location)
-const _scriptEl = document.currentScript;
-const _scriptDir = _scriptEl ? _scriptEl.src.substring(0, _scriptEl.src.lastIndexOf('/') + 1) : '';
-const MODEL_PATH = _scriptDir ? _scriptDir + '../assets/models/best.onnx' : 'assets/models/best.onnx';
+// Resolve model path relative to project root
+const MODEL_PATH = 'assets/models/best.onnx';
 const INPUT_SIZE = 640;
 
 // Initialize ONNX Session
-async function initVisionModel() {
+export async function initVisionModel() {
     try {
         Logger.group('Model Initialization');
         Logger.info(`Loading YOLO ONNX model from: ${MODEL_PATH}`);
@@ -38,7 +36,7 @@ initVisionModel();
  * @param {HTMLCanvasElement} sourceCanvas - The canvas containing the captured webcam frame.
  * @returns {Promise<{score: number, canvasElement: HTMLCanvasElement}>}
  */
-window.processImageForScore = async (sourceCanvas) => {
+export const processImageForScore = async (sourceCanvas) => {
     Logger.group('processImageForScore');
 
     if (!yoloModel) {
@@ -144,7 +142,7 @@ window.processImageForScore = async (sourceCanvas) => {
  * @param {HTMLCanvasElement} sourceCanvas - The canvas containing the captured webcam frame.
  * @returns {Promise<{score: number, canvasElement: HTMLCanvasElement}>}
  */
-window.processImageForScoreTwoPass = async (sourceCanvas) => {
+export const processImageForScoreTwoPass = async (sourceCanvas) => {
     Logger.group('processImageForScoreTwoPass (Two-Pass Crop)');
 
     if (!yoloModel) {

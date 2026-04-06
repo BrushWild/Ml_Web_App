@@ -1,7 +1,7 @@
 // logger.js - Structured debug logging for the Onnx Web App pipeline
 // Logs to both console and an on-screen log panel
 
-const Logger = (() => {
+export const Logger = (() => {
     const LEVELS = {
         DEBUG: { label: 'DEBUG', color: '#888', consoleMethod: 'debug' },
         INFO: { label: 'INFO', color: '#4CAF50', consoleMethod: 'log' },

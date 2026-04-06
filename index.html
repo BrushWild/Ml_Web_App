@@ -18,14 +18,48 @@
 <body>
     <div id="app-container">
 
+        <!-- ── Home Screen Overlay ────────────────── -->
+        <div id="home-screen-overlay" class="overlay active">
+            <div class="home-content">
+                <div class="home-logo">
+                    <span class="domino-icon">🁣</span>
+                    <h1>Domino Vision</h1>
+                    <p>AI-Powered Domino Scoring</p>
+                </div>
+                <div class="home-actions">
+                    <button id="play-local-btn" class="success primary">
+                        <span class="material-icons">person</span>
+                        Play Locally (Offline)
+                    </button>
+                    <div class="home-divider">
+                        <span>OR MULTIPLAYER</span>
+                    </div>
+                    <button id="host-lobby-btn">
+                        <span class="material-icons">group_add</span>
+                        Create Lobby (Host)
+                    </button>
+                    <button id="join-lobby-btn-home" class="outlined">
+                        <span class="material-icons">group</span>
+                        Join Existing Lobby
+                    </button>
+                </div>
+                <div class="home-footer">
+                    <button id="open-settings-btn" class="icon-btn" title="Network Settings">
+                        <span class="material-icons">settings</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- ── App Header ──────────────────────────── -->
         <header>
+            <button id="header-home-btn" class="icon-btn" title="Back to Home" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: white; border-color: rgba(255,255,255,0.3); z-index: 20;">
+                <span class="material-icons">home</span>
+            </button>
             <img class="train-animated" src="assets/images/train-white.png" alt="Train Icon">
             <h1>
                 Domino Vision
-                <!-- <span class="domino-icon">🁣</span> Domino Vision <span class="domino-icon">🁣</span> -->
             </h1>
-            <!-- <p>Score your dominoes automatically using machine learning!</p> -->
         </header>
 
         <!-- <header
@@ -72,7 +106,20 @@
 
             <!-- ── Scoreboard Card ─────────────────── -->
             <section id="scoreboard">
-                <h2>Scoreboard</h2>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 2px;">
+                    <h2 style="margin-bottom:0;">Scoreboard</h2>
+                    <div id="mode-indicator" class="badge local">Local Mode</div>
+                </div>
+                <div id="lobby-info-row" class="hidden" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; padding-top: 8px; border-top: 1px solid var(--md-outline);">
+                    <div class="lobby-code-display">
+                        <span class="label">Lobby Code:</span>
+                        <span id="display-lobby-code" class="code">-----</span>
+                    </div>
+                    <button id="leave-lobby-btn" class="remove-btn" style="border-radius: var(--radius-full); padding: 4px 12px; font-size: 11px;">
+                        <span class="material-icons" style="font-size:14px; vertical-align:-3px; margin-right:4px;">exit_to_app</span>
+                        Leave
+                    </button>
+                </div>
                 <ul id="player-list">
                     <!-- Player items injected by JavaScript -->
                 </ul>
@@ -121,6 +168,11 @@
                         <span class="material-icons"
                             style="font-size:16px;vertical-align:-3px;margin-right:4px;">check_circle</span>
                         Accept Score:&nbsp;<span id="calculated-score">0</span>
+                    </button>
+                    <button id="confirm-score-btn" class="hidden success primary">
+                        <span class="material-icons"
+                            style="font-size:16px;vertical-align:-3px;margin-right:4px;">cloud_upload</span>
+                        Confirm to Backend
                     </button>
                 </div>
 
@@ -210,6 +262,88 @@
         </div>
     </div>
 
+    <!-- ── Reconnecting Modal ───────────────────────── -->
+    <div id="reconnecting-modal" class="modal reconnecting-overlay" role="dialog" aria-modal="true">
+        <div class="modal-content">
+            <div id="reconnecting-spinner" class="spinner-domino">🁣</div>
+            <h2>Reconnecting...</h2>
+            <p>Lost connection to the SpacetimeDB server. Hang tight while we try to restore it.</p>
+            <div id="reconnect-timer-wrapper" class="hidden">
+                <p class="timer-msg">Still no luck? You can head back to Local Mode and continue playing offline.</p>
+                <button id="return-local-btn" class="outlined primary">
+                    <span class="material-icons" style="font-size:16px;vertical-align:-3px;margin-right:4px;">home</span>
+                    Return to Local Mode
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Create Lobby Modal ─────────────────────── -->
+    <div id="create-lobby-modal" class="modal" role="dialog" aria-modal="true">
+        <div class="modal-content">
+            <span class="close-btn" id="close-create-modal-btn" role="button" aria-label="Close">&#xD7;</span>
+            <h2>Host New Lobby</h2>
+            <p style="font-size: 14px; color: var(--md-on-surface-sub); margin-bottom: 20px;">
+                Start a new game and invite others to join using a private code.
+            </p>
+            <div class="field-group" style="text-align: left;">
+                <label class="field-label" for="create-owner-name">Your Player Name</label>
+                <input type="text" id="create-owner-name" placeholder="Enter your name..." autocomplete="off">
+            </div>
+            <div class="modal-controls" style="margin-top:24px;">
+                <button id="create-confirm-btn" class="success primary">
+                    <span class="material-icons">check</span>
+                    Start Game
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Join Lobby Modal ───────────────────────── -->
+    <div id="join-lobby-modal" class="modal" role="dialog" aria-modal="true">
+        <div class="modal-content">
+            <span class="close-btn" id="close-join-modal-btn" role="button" aria-label="Close">&#xD7;</span>
+            <h2>Join Lobby</h2>
+            <p style="font-size: 14px; color: var(--md-on-surface-sub); margin-bottom: 20px;">
+                Enter a 5-character lobby code to join a game in progress.
+            </p>
+            <div class="add-player-fields">
+                <div class="field-group">
+                    <label class="field-label" for="join-name">Your Player Name</label>
+                    <input type="text" id="join-name" placeholder="Enter your name..." autocomplete="off">
+                </div>
+                <div class="field-group">
+                    <label class="field-label" for="join-code">Lobby Code</label>
+                    <input type="text" id="join-code" placeholder="ABCDE" maxlength="5" autocomplete="off" style="text-transform: uppercase; font-family: 'Roboto Mono', monospace; letter-spacing: 2px; text-align: center; font-size: 20px;">
+                </div>
+            </div>
+            <div class="modal-controls" style="margin-top:24px;">
+                <button id="join-confirm-btn" class="success primary">
+                    <span class="material-icons">group</span>
+                    Join Game
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Network Settings Modal ─────────────────── -->
+    <div id="settings-modal" class="modal" role="dialog" aria-modal="true">
+        <div class="modal-content">
+            <span class="close-btn" id="close-settings-modal-btn" role="button" aria-label="Close">&#xD7;</span>
+            <h2>Network Settings</h2>
+            <div class="field-group" style="text-align: left; margin-top: 16px;">
+                <label class="field-label" for="server-uri">SpacetimeDB Server URI</label>
+                <input type="text" id="server-uri" placeholder="ws://localhost:3000" value="ws://localhost:3000">
+                <p style="font-size: 11px; color: var(--md-on-surface-dim); margin-top: 8px;">
+                    Change this if you are using a custom or public SpacetimeDB node.
+                </p>
+            </div>
+            <div class="modal-controls" style="margin-top:24px;">
+                <button id="settings-save-btn">Save & Apply</button>
+            </div>
+        </div>
+    </div>
+
 
     </div><!-- /#app-container -->
 
@@ -236,9 +370,7 @@
     </button>
 
     <!-- ── Application Scripts ────────────────────── -->
-    <script src="js/logger.js?v=3"></script>
-    <script src="js/vision.js?v=3"></script>
-    <script src="js/app.js?v=3"></script>
+    <script type="module" src="js/app.js?v=3"></script>
 
     <!-- ── Button stretch-on-click micro-animation ── -->
     <script>

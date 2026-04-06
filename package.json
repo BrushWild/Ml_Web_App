@@ -1,0 +1,31 @@
+{
+  "name": "ml_web_app",
+  "version": "1.0.0",
+  "description": "A browser-based domino scoring application that uses machine learning to automatically detect and count domino pips from a live webcam feed. Built as a lightweight static site — no server required.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "build-stdb": "esbuild js/stdb.ts --bundle --outfile=js/stdb.bundle.js --format=esm",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BrushWild/Ml_Web_App.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/BrushWild/Ml_Web_App/issues"
+  },
+  "homepage": "https://github.com/BrushWild/Ml_Web_App#readme",
+  "devDependencies": {
+    "esbuild": "^0.28.0"
+  },
+  "dependencies": {
+    "spacetimedb": "^2.1.0"
+  }
+}
