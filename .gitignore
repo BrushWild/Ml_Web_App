@@ -1,2 +1,20 @@
 docs/hidden
 mcp/context7/.env
+utility/
+
+# Node.js / Python
+node_modules/
+.venv/
+
+# Rust / SpacetimeDB
+target/
+**/target/
+Cargo.lock
+server/domino-vision/spacetime.local.json
+server/domino-vision/spacetimedb/check_output*.txt
+
+# Generated Client Bindings
+server/domino-vision/js/stdb/
+
+# Logs
+*.log

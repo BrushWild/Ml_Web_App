@@ -53,7 +53,8 @@
 
         <!-- ── App Header ──────────────────────────── -->
         <header>
-            <button id="header-home-btn" class="icon-btn" title="Back to Home" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: white; border-color: rgba(255,255,255,0.3); z-index: 20;">
+            <button id="header-home-btn" class="icon-btn" title="Back to Home"
+                style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: white; border-color: rgba(255,255,255,0.3); z-index: 20;">
                 <span class="material-icons">home</span>
             </button>
             <img class="train-animated" src="assets/images/train-white.png" alt="Train Icon">
@@ -110,13 +111,16 @@
                     <h2 style="margin-bottom:0;">Scoreboard</h2>
                     <div id="mode-indicator" class="badge local">Local Mode</div>
                 </div>
-                <div id="lobby-info-row" class="hidden" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; padding-top: 8px; border-top: 1px solid var(--md-outline);">
+                <div id="lobby-info-row" class="hidden"
+                    style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; padding-top: 8px; border-top: 1px solid var(--md-outline);">
                     <div class="lobby-code-display">
                         <span class="label">Lobby Code:</span>
                         <span id="display-lobby-code" class="code">-----</span>
                     </div>
-                    <button id="leave-lobby-btn" class="remove-btn" style="border-radius: var(--radius-full); padding: 4px 12px; font-size: 11px;">
-                        <span class="material-icons" style="font-size:14px; vertical-align:-3px; margin-right:4px;">exit_to_app</span>
+                    <button id="leave-lobby-btn" class="remove-btn"
+                        style="border-radius: var(--radius-full); padding: 4px 12px; font-size: 11px;">
+                        <span class="material-icons"
+                            style="font-size:14px; vertical-align:-3px; margin-right:4px;">exit_to_app</span>
                         Leave
                     </button>
                 </div>
@@ -271,7 +275,8 @@
             <div id="reconnect-timer-wrapper" class="hidden">
                 <p class="timer-msg">Still no luck? You can head back to Local Mode and continue playing offline.</p>
                 <button id="return-local-btn" class="outlined primary">
-                    <span class="material-icons" style="font-size:16px;vertical-align:-3px;margin-right:4px;">home</span>
+                    <span class="material-icons"
+                        style="font-size:16px;vertical-align:-3px;margin-right:4px;">home</span>
                     Return to Local Mode
                 </button>
             </div>
@@ -314,7 +319,8 @@
                 </div>
                 <div class="field-group">
                     <label class="field-label" for="join-code">Lobby Code</label>
-                    <input type="text" id="join-code" placeholder="ABCDE" maxlength="5" autocomplete="off" style="text-transform: uppercase; font-family: 'Roboto Mono', monospace; letter-spacing: 2px; text-align: center; font-size: 20px;">
+                    <input type="text" id="join-code" placeholder="ABCDE" maxlength="5" autocomplete="off"
+                        style="text-transform: uppercase; font-family: 'Roboto Mono', monospace; letter-spacing: 2px; text-align: center; font-size: 20px;">
                 </div>
             </div>
             <div class="modal-controls" style="margin-top:24px;">
