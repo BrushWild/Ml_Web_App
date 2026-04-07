@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEBUG — SpacetimeDB Browser Browser</title>
+    <style>
+        :root {
+            --bg: #0b1a0b;
+            --surface: #1a2b1b;
+            --primary: #66bb6a;
+            --primary-dark: #388e3c;
+            --text: #a5d6a7;
+            --outline: #388e3c;
+            --error: #ef5350;
+        }
+
+        body { 
+            font-family: 'Roboto Mono', 'Cascadia Code', monospace; 
+            background: var(--bg); 
+            color: var(--text); 
+            padding: 24px; 
+            font-size: 13px; 
+            line-height: 1.6;
+        }
+
+        h1, h2, h3 { 
+            color: var(--primary); 
+            margin-top: 0; 
+            text-transform: uppercase; 
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--outline);
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+        }
+
+        h1 { font-size: 20px; }
+        h2 { font-size: 15px; margin-bottom: 12px; }
+
+        .grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); 
+            gap: 24px; 
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        section { 
+            background: var(--surface); 
+            border: 1px solid var(--outline); 
+            border-radius: 12px; 
+            padding: 20px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5); 
+        }
+
+        .field { margin-bottom: 12px; }
+        label { 
+            display: block; 
+            font-size: 10px; 
+            color: #88a889; 
+            text-transform: uppercase; 
+            margin-bottom: 4px; 
+            font-weight: bold;
+        }
+
+        input { 
+            background: var(--bg); 
+            border: 1px solid #4e7050; 
+            color: #fff; 
+            padding: 10px 14px; 
+            width: 100%; 
+            box-sizing: border-box; 
+            border-radius: 6px; 
+            font-family: inherit;
+        }
+
+        input:focus { outline: none; border-color: var(--primary); }
+
+        .btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+        
+        button { 
+            background: var(--primary-dark); 
+            color: white; 
+            border: none; 
+            padding: 10px 16px; 
+            cursor: pointer; 
+            border-radius: 6px; 
+            font-weight: bold; 
+            font-family: inherit;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            font-size: 11px;
+        }
+
+        button:hover { background: var(--primary); transform: translateY(-1px); }
+        button:active { transform: translateY(0); }
+        
+        button.outlined { background: transparent; border: 1px solid var(--outline); color: var(--primary); }
+        button.outlined:hover { background: rgba(102, 187, 106, 0.1); }
+        
+        button.danger { background: var(--error); }
+        button.danger:hover { background: #c62828; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { text-align: left; padding: 12px 8px; border-bottom: 1px solid #2a3a2a; }
+        th { font-size: 10px; color: #88a889; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 4px; }
+        .badge-owner { background: #ffca28; color: #000; }
+        .badge-self { background: #42a5f5; color: #fff; }
+
+        #debug-logs { 
+            background: #050a05; 
+            border: 1px solid #2a3a2a; 
+            padding: 12px; 
+            border-radius: 8px; 
+            font-size: 11px; 
+            color: #69946a;
+            max-height: 250px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .loader { color: #66bb6a; font-style: italic; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
+        
+        .status-connected { color: #66bb6a; font-weight: bold; }
+        .status-disconnected { color: #ef5350; font-weight: bold; }
+
+        .player-row:hover { background: rgba(255,255,255,0.02); }
+    </style>
+</head>
+<body>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
+        <h1>SpacetimeDB Debugging Browser</h1>
+        <div id="conn-status" class="status-disconnected">DISCONNECTED</div>
+    </div>
+    
+    <div class="grid">
+        <!-- Discovery & Connection -->
+        <div style="display:flex; flex-direction:column; gap:24px;">
+            <section id="connection">
+                <h2>1. Connection Settings</h2>
+                <div class="field">
+                    <label>Identity (Self)</label>
+                    <div id="display-identity" style="font-size: 11px; background: #000; padding: 8px; border-radius: 4px; word-break: break-all;">---</div>
+                </div>
+                <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 12px; padding: 0;">
+                    <div class="field">
+                        <label>URI</label>
+                        <input type="text" id="input-uri" value="ws://localhost:3000">
+                    </div>
+                    <div class="field">
+                        <label>DB Name</label>
+                        <input type="text" id="input-dbname" value="domino-vision">
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button id="btn-reconnect">Connect / Reset</button>
+                    <button id="btn-clear-storage" class="outlined danger">Clear Local Storage</button>
+                </div>
+            </section>
+
+            <section id="lobby-browser">
+                <h2>2. Lobby Table (Discovery)</h2>
+                <div style="max-height: 300px; overflow-y: auto;">
+                    <table>
+                        <thead>
+                            <tr><th>Code</th><th>Lobby Name</th><th>Owner</th><th>Action</th></tr>
+                        </thead>
+                        <tbody id="lobby-rows">
+                            <tr><td colspan="4" class="loader">Scanning tables...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="actions-create">
+                <h2>3. Manual Reducers</h2>
+                <h3>Create Lobby</h3>
+                <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 12px; padding: 0;">
+                    <div class="field"><label>Your Name</label><input type="text" id="create-user-name" placeholder="Player1"></div>
+                    <div class="field"><label>Lobby Name</label><input type="text" id="create-lobby-name" placeholder="Friday Night"></div>
+                </div>
+                <div class="field"><label>Specific Code (Optional)</label><input type="text" id="create-code" placeholder="ABCDE"></div>
+                <button id="btn-create" style="width:100%;">Call create_lobby</button>
+
+                <h3 style="margin-top: 20px;">Join by Code</h3>
+                <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 12px; padding: 0;">
+                    <div class="field"><label>Your Name</label><input type="text" id="join-name" placeholder="Player2"></div>
+                    <div class="field"><label>Lobby Code</label><input type="text" id="join-code" placeholder="XYZ12"></div>
+                </div>
+                <button id="btn-join" class="outlined" style="width:100%;">Call join_lobby</button>
+            </section>
+        </div>
+
+        <!-- Active Context -->
+        <div style="display:flex; flex-direction:column; gap:24px;">
+            <section id="active-context">
+                <h2>4. Active Lobby Context</h2>
+                <div id="active-lobby-display" style="background: rgba(102, 187, 106, 0.05); padding: 15px; border-radius: 8px; border: 1px dashed var(--outline); text-align: center; font-size: 14px;">
+                    NOT IN A LOBBY
+                </div>
+                <div class="btn-group" style="justify-content: center; margin-top: 15px;">
+                    <button id="btn-leave" class="danger">Call leave_lobby</button>
+                    <button id="btn-delete-lobby" class="danger outlined">Delete Full Lobby (Owner)</button>
+                </div>
+            </section>
+
+            <section id="players-browser">
+                <h2>5. Player Table (Current Lobby)</h2>
+                <div style="max-height: 400px; overflow-y: auto;">
+                    <table>
+                        <thead>
+                            <tr><th>ID / Client</th><th>Name</th><th>Score</th><th>Controls</th></tr>
+                        </thead>
+                        <tbody id="player-rows">
+                            <tr><td colspan="4" style="text-align: center; color: #666;">No active players.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="btn-group" style="margin-top: 15px;">
+                    <button id="btn-global-reset" class="outlined" style="width:100%;">Reset All Players to 0</button>
+                </div>
+            </section>
+
+            <section id="logs">
+                <h2>6. Event Log</h2>
+                <div id="debug-logs">Waiting for events...</div>
+                <button id="btn-clear-logs" class="outlined" style="width:100%; margin-top: 10px;">Clear Event Log</button>
+            </section>
+        </div>
+    </div>
+
+    <!-- Configuration for Module Imports -->
+    <script type="importmap">
+    {
+      "imports": {
+        "stdb": "./js/stdb.bundle.js",
+        "stores/LocalStorageStore": "./js/stores/LocalStorageStore.js",
+        "stores/SpacetimeDBStore": "./js/stores/SpacetimeDBStore.js"
+      }
+    }
+    </script>
+    <script type="module" src="js/debug-app.js"></script>
+</body>
+</html>

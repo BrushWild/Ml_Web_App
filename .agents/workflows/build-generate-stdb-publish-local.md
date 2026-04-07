@@ -15,7 +15,7 @@ This workflow assumes that spacetime is already running via `spacetime start`
 
 #### Generate
 **Generate typescript files**
-   `spacetime generate --lang typescript --out-dir js/stdb --module-path ..\..\server\domino-vision\spacetimedb\`
+   `spacetime generate --lang typescript --out-dir ../../js/stdb --module-path ..\..\server\domino-vision\spacetimedb\`
    `npm run build-stdb`
 
 #### Publish

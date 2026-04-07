@@ -7829,6 +7829,11 @@ var create_lobby_reducer_default = {
   codeArg: t.string()
 };
 
+// js/stdb/delete_lobby_reducer.ts
+var delete_lobby_reducer_default = {
+  code: t.string()
+};
+
 // js/stdb/join_lobby_reducer.ts
 var join_lobby_reducer_default = {
   name: t.string(),
@@ -7914,6 +7919,7 @@ var tablesSchema = schema({
 });
 var reducersSchema = reducers(
   reducerSchema("create_lobby", create_lobby_reducer_default),
+  reducerSchema("delete_lobby", delete_lobby_reducer_default),
   reducerSchema("join_lobby", join_lobby_reducer_default),
   reducerSchema("remove_player", remove_player_reducer_default),
   reducerSchema("update_score", update_score_reducer_default),

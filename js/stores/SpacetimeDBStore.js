@@ -59,29 +59,39 @@ export class SpacetimeDBStore extends GameStore {
 
         const lobby = Array.from(this.conn.db.lobby.iter()).find(l => l.lobbyCode === player.lobbyCode);
         if (!lobby) {
+            console.warn(`SpacetimeDB Store: Player is in lobby ${player.lobbyCode}, but lobby table does not contain it.`);
             return null;
         }
 
-        return {
+        const info = {
             code: lobby.lobbyCode,
             name: lobby.lobbyName,
             ownerId: typeof lobby.ownerId === 'string' ? lobby.ownerId : lobby.ownerId.toHexString(),
             isOwner: (typeof lobby.ownerId === 'string' ? lobby.ownerId : lobby.ownerId.toHexString()) ===
                 (typeof this.identity === 'string' ? this.identity : this.identity.toHexString())
         };
+
+        console.log("SpacetimeDB Store: getLobbyInfo result:", info);
+        return info;
     }
 
     /** Get all available lobbies with player counts */
     getAvailableLobbies() {
-        if (!this.conn || !this.conn.db || !this.conn.db.lobby) return [];
+        if (!this.conn || !this.conn.db || !this.conn.db.lobby) {
+            console.warn("SpacetimeDB Store: lobby table not available for getAvailableLobbies");
+            return [];
+        }
 
-        return Array.from(this.conn.db.lobby.iter()).map(lobby => {
+        const lobbies = Array.from(this.conn.db.lobby.iter()).map(lobby => {
             return {
                 code: lobby.lobbyCode,
                 name: lobby.lobbyName,
                 playerCount: this.getPlayersInLobby(lobby.lobbyCode).length
             };
         });
+
+        console.log(`SpacetimeDB Store: getAvailableLobbies found ${lobbies.length} lobbies`);
+        return lobbies;
     }
 
     /** Helper to get all players in a specific lobby by code */
@@ -153,12 +163,24 @@ export class SpacetimeDBStore extends GameStore {
         const cleanName = name.trim();
         const cleanCode = code.trim();
 
-        console.log(`SpacetimeDB: Joining lobby "${cleanCode}" as "${cleanName}"`);
+        console.log(`SpacetimeDB: Join attempt lobby "${cleanCode}" as "${cleanName}"`);
 
         // FIXED: Passing arguments as a single named object
         this.conn.reducers.joinLobby({
             name: cleanName,
             code: cleanCode
+        });
+    }
+
+    deleteLobby(code) {
+        console.log(`SpacetimeDB: Delete attempt for lobby "${code}"`);
+        if (!code || typeof code !== 'string') {
+            console.error("SpacetimeDB: Cannot delete lobby without a valid code");
+            return;
+        }
+        console.log(`SpacetimeDB: Delete attempt for lobby "${code}"`);
+        this.conn.reducers.deleteLobby({
+            code: code.trim().to_uppercase()
         });
     }
 

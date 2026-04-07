@@ -52,13 +52,17 @@ pub fn client_connected(ctx: &ReducerContext) {
 }
 
 #[reducer(client_disconnected)]
-pub fn client_disconnected(_ctx: &ReducerContext) {
-    // Currently no specific action needed on disconnect as per plan
+pub fn client_disconnected(ctx: &ReducerContext) {
+    if let Err(e) = leave_all_lobbies(ctx, ctx.sender()) {
+        log::error!("Error cleaning up lobbies for disconnected client: {}", e);
+    }
 }
 
 #[reducer]
 pub fn update_user_name(ctx: &ReducerContext, name: String) -> Result<(), String> {
+    log::info!("update_user_name called for {:?} with name: '{}'", ctx.sender(), name);
     if name.trim().is_empty() {
+        log::error!("update_user_name failed: Name cannot be empty");
         return Err("Name cannot be empty".to_string());
     }
 
@@ -70,16 +74,20 @@ pub fn update_user_name(ctx: &ReducerContext, name: String) -> Result<(), String
         });
 
         // Update all player records for this user in any lobbies
+        let mut count = 0;
         for player in ctx.db.player().iter() {
             if player.client_id == identity {
                 ctx.db.player().player_id().update(Player {
                     name: name.clone(),
                     ..player
                 });
+                count += 1;
             }
         }
+        log::info!("update_user_name success for {:?}. Updated {} player records.", identity, count);
         Ok(())
     } else {
+        log::error!("update_user_name failed: User not found for identity {:?}", identity);
         Err("User not found".to_string())
     }
 }
@@ -132,9 +140,11 @@ pub fn create_lobby(ctx: &ReducerContext, user_name: String, lobby_name: String,
 #[reducer]
 pub fn join_lobby(ctx: &ReducerContext, name: String, code: String) -> Result<(), String> {
     let lobby_code = code.trim().to_uppercase();
+    log::info!("join_lobby called: User '{}', Lobby '{}'", name, lobby_code);
     
     // Validate lobby exists
     if ctx.db.lobby().lobby_code().find(&lobby_code).is_none() {
+        log::error!("join_lobby failed: Lobby {} does not exist", lobby_code);
         return Err(format!("Lobby {} does not exist", lobby_code));
     }
 
@@ -145,7 +155,7 @@ pub fn join_lobby(ctx: &ReducerContext, name: String, code: String) -> Result<()
     leave_all_lobbies(ctx, ctx.sender())?;
 
     // Join the new lobby
-    ctx.db.player().insert(Player {
+    let player = ctx.db.player().insert(Player {
         player_id: 0, // auto_inc
         lobby_code: lobby_code.clone(),
         client_id: ctx.sender(),
@@ -153,7 +163,35 @@ pub fn join_lobby(ctx: &ReducerContext, name: String, code: String) -> Result<()
         score: 0,
     });
 
-    log::info!("User {:?} joined lobby {}", ctx.sender(), lobby_code);
+    log::info!("join_lobby success: User {:?} joined lobby {}", player.player_id, lobby_code);
+    Ok(())
+}
+
+#[reducer]
+pub fn delete_lobby(ctx: &ReducerContext, code: String) -> Result<(), String> {
+    let lobby_code = code.trim().to_uppercase();
+    let lobby = ctx.db.lobby().lobby_code().find(&lobby_code)
+        .ok_or_else(|| "Lobby not found".to_string())?;
+
+    // Authorization: Only the owner can delete the entire lobby
+    if ctx.sender() != lobby.owner_id {
+        return Err("Not authorized to delete this lobby".to_string());
+    }
+
+    // 1. Remove all players in that lobby
+    let players_to_remove: Vec<u64> = ctx.db.player().iter()
+        .filter(|p| p.lobby_code == lobby_code)
+        .map(|p| p.player_id)
+        .collect();
+
+    for player_id in players_to_remove {
+        ctx.db.player().player_id().delete(&player_id);
+    }
+
+    // 2. Delete the lobby record
+    ctx.db.lobby().lobby_code().delete(&lobby_code);
+
+    log::info!("Lobby {} and all associated players deleted by owner {:?}", lobby_code, ctx.sender());
     Ok(())
 }
 
@@ -164,8 +202,13 @@ pub fn update_score(ctx: &ReducerContext, player_id: u64, new_score: i32) -> Res
     let player = ctx.db.player().player_id().find(&player_id)
         .ok_or_else(|| "Player not found".to_string())?;
 
-    let lobby = ctx.db.lobby().lobby_code().find(&player.lobby_code)
-        .ok_or_else(|| "Lobby not found".to_string())?;
+    let lobby_opt = ctx.db.lobby().lobby_code().find(&player.lobby_code);
+    if lobby_opt.is_none() {
+        ctx.db.player().player_id().delete(&player_id);
+        log::warn!("Player {} was orphaned in non-existent lobby {}", player_id, player.lobby_code);
+        return Err("Lobby no longer exists".to_string());
+    }
+    let lobby = lobby_opt.unwrap();
 
     // Authorization: Only the player themselves or the lobby owner can modify a score
     if player.client_id != ctx.sender() && lobby.owner_id != ctx.sender() {
@@ -186,46 +229,50 @@ pub fn remove_player(ctx: &ReducerContext, player_id: u64) -> Result<(), String>
         .ok_or_else(|| "Player not found".to_string())?;
 
     let lobby_code = player_to_remove.lobby_code.clone();
-    let lobby = ctx.db.lobby().lobby_code().find(&lobby_code)
-        .ok_or_else(|| "Lobby not found".to_string())?;
+    let lobby_opt = ctx.db.lobby().lobby_code().find(&lobby_code);
 
-    // Authorization: owner kicks someone or player leaves themselves
-    if ctx.sender() != lobby.owner_id && ctx.sender() != player_to_remove.client_id {
-        return Err("Not authorized to remove this player".to_string());
-    }
+    if let Some(lobby) = lobby_opt {
+        // Authorization check if lobby still exists
+        if ctx.sender() != lobby.owner_id && ctx.sender() != player_to_remove.client_id {
+            return Err("Not authorized to remove this player".to_string());
+        }
 
-    // Perform removal
-    ctx.db.player().player_id().delete(&player_id);
+        // Perform removal
+        ctx.db.player().player_id().delete(&player_id);
 
-    // Maintenance logic:
-    // If the leaving player is the owner_id
-    if player_to_remove.client_id == lobby.owner_id {
-        // Find remaining players in this lobby
-        let mut remaining_players: Vec<Player> = ctx.db.player().iter()
-            .filter(|p| p.lobby_code == lobby_code)
-            .collect();
+        if player_to_remove.client_id == lobby.owner_id {
+            // Find remaining players to transfer ownership
+            let mut remaining_players: Vec<Player> = ctx.db.player().iter()
+                .filter(|p| p.lobby_code == lobby_code)
+                .collect();
 
-        if remaining_players.is_empty() {
-            // No players remain, delete the lobby
-            ctx.db.lobby().lobby_code().delete(&lobby_code);
-            log::info!("Lobby {} deleted as it is empty", lobby_code);
+            if remaining_players.is_empty() {
+                // No one left, delete lobby
+                ctx.db.lobby().lobby_code().delete(&lobby_code);
+                log::info!("Lobby {} deleted as no players remain", lobby_code);
+            } else {
+                // Sort by player_id and pick the first remaining player as the new owner
+                remaining_players.sort_by_key(|p| p.player_id);
+                let next_owner = &remaining_players[0];
+                
+                ctx.db.lobby().lobby_code().update(Lobby {
+                    owner_id: next_owner.client_id,
+                    ..lobby
+                });
+                log::info!("Lobby {} ownership transferred to {:?}", lobby_code, next_owner.client_id);
+            }
         } else {
-            // Transfer ownership to the oldest player (lowest player_id)
-            remaining_players.sort_by_key(|p| p.player_id);
-            let next_owner = &remaining_players[0];
-            ctx.db.lobby().lobby_code().update(Lobby {
-                owner_id: next_owner.client_id,
-                ..lobby
-            });
-            log::info!("Lobby {} ownership transferred to {:?}", lobby_code, next_owner.client_id);
+            // Logic for a non-owner leaving: cleanup lobby if now empty
+            let is_empty = ctx.db.player().iter().filter(|p| p.lobby_code == lobby_code).count() == 0;
+            if is_empty {
+                ctx.db.lobby().lobby_code().delete(&lobby_code);
+                log::info!("Lobby {} deleted as it is now empty", lobby_code);
+            }
         }
     } else {
-        // Just verify if the lobby is now empty (if for some reason players are gone but not owner)
-        // (Owner removal is handled above, so this is just a fallback for sanity)
-        let is_empty = ctx.db.player().iter().filter(|p| p.lobby_code == lobby_code).count() == 0;
-        if is_empty {
-            ctx.db.lobby().lobby_code().delete(&lobby_code);
-        }
+        // Lobby is gone (orphaned state), just delete the player record
+        ctx.db.player().player_id().delete(&player_id);
+        log::info!("Cleaned up orphaned player {} from non-existent lobby {}", player_id, lobby_code);
     }
 
     Ok(())

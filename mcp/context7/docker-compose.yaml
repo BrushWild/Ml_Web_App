@@ -4,8 +4,13 @@ services:
     container_name: context7-mcp
     restart: unless-stopped
     ports:
-      - "8010:8010"
+      - "8010:38011"
     environment:
-      - PORT=8010
       - CONTEXT7_API_KEY=${ENV_CONTEXT7_API_KEY}
       - NODE_ENV=development
+
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50' # Limits the container to 50% of a single CPU core
+          memory: 512M # Limits the container to 512MB of RAM

@@ -1,12 +1,8 @@
 {
     "_comment": "Place in C:\Users\asnea\.gemini\antigravity\mcp_config.json",
     "mcpServers": {
-        "context7": {
-            "command": "npx",
-            "args": [
-                "-y",
-                "@upstash/context7-mcp"
-            ]
+        "context7-local": {
+            "serverUrl": "http://127.0.0.1:8010/mcp"
         }
     }
 }

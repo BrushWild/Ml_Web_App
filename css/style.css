@@ -596,11 +596,7 @@ button.icon-btn:hover {
     /* suppress the translateY lift */
 }
 
-/* Cog: suppress the global jiggle and spin instead */
-button.icon-btn:hover .material-icons {
-    animation: none;
-    transform: rotate(45deg);
-}
+/* Icon-btn hover handled by global button:hover jiggle */
 
 /* Camera icon jiggle on hover */
 @keyframes camera-jiggle {
@@ -968,8 +964,9 @@ canvas {
     gap: 16px;
 }
 
-/* Log close and home footer icons use jiggle instead of rotate */
+/* Log close, Quick Home close and home footer icons use jiggle */
 #log-close-btn:hover .material-icons,
+#quick-home-close-btn:hover .material-icons,
 .home-footer .icon-btn:hover .material-icons {
     animation: camera-jiggle .55s var(--ease-spring) forwards;
     transform: none;

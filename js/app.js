@@ -42,6 +42,14 @@ document.addEventListener("DOMContentLoaded", () => {
         const modeIndicatorEl = document.getElementById("mode-indicator");
         const confirmScoreBtn = document.getElementById("confirm-score-btn");
 
+        // Quick Home Tile Elements
+        const quickHomeTile = document.getElementById("quick-home-tile");
+        const quickHomeCloseBtn = document.getElementById("quick-home-close-btn");
+        const quickPlayLocalBtn = document.getElementById("quick-play-local-btn");
+        const quickHostLobbyBtn = document.getElementById("quick-host-lobby-btn");
+        const quickJoinLobbyBtn = document.getElementById("quick-join-lobby-btn");
+        const quickSettingsBtn = document.getElementById("quick-settings-btn");
+
         // Home Screen elements
         const homeScreenSection = document.getElementById("home-screen");
         const gameSetupSection = document.getElementById("game-setup");
@@ -76,6 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // === Game State ===
         let playMode = 'local'; // 'local' or 'multiplayer'
         let currentStore = new LocalStorageStore();
+        window.gameStore = currentStore; // Added for console debugging
         let currentPlayerIdForScore = null;
         let currentVideoStream = null;
         let currentScore = 0;
@@ -97,11 +106,30 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         };
 
-        if (logFab) logFab.addEventListener('click', () => showView('home'));
-        if (homeLogBtn) homeLogBtn.addEventListener('click', toggleLogTile);
-        if (logCloseBtn) logCloseBtn.addEventListener('click', toggleLogTile);
+        // === Quick Home Tile Toggle ===
+        const toggleQuickHomeTile = (forceClose = false) => {
+            if (!quickHomeTile) return;
+            if (forceClose) {
+                quickHomeTile.classList.add("collapsed");
+                logFabIcon.textContent = "home";
+                return;
+            }
+            const isCollapsed = quickHomeTile.classList.toggle("collapsed");
+            if (!isCollapsed) {
+                logSection?.classList.add("collapsed");
+                logFabIcon.textContent = "close";
+            } else {
+                logFabIcon.textContent = "home";
+            }
+        };
+
+        if (logFab) logFab.addEventListener("click", () => toggleQuickHomeTile());
+        if (quickHomeCloseBtn) quickHomeCloseBtn.addEventListener("click", () => toggleQuickHomeTile(true));
+
+        if (homeLogBtn) homeLogBtn.addEventListener("click", toggleLogTile);
+        if (logCloseBtn) logCloseBtn.addEventListener("click", toggleLogTile);
         if (logClearBtn) {
-            logClearBtn.addEventListener('click', () => Logger.clear());
+            logClearBtn.addEventListener("click", () => Logger.clear());
         }
 
         Logger.info('App initialized.');
@@ -144,7 +172,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             updateUIForMode();
             renderPlayers(currentStore.getPlayers());
-            Logger.info(`Play mode set to: ${mode}`);
+            window.gameStore = currentStore; // Update global reference
+            Logger.info(`Play mode set to: ${mode}. Store exposed as window.gameStore`);
         };
 
         const updateUIForMode = () => {
@@ -207,6 +236,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (playMode === 'multiplayer' && !(currentStore instanceof SpacetimeDBStore)) {
                         currentStore = new SpacetimeDBStore(stdbConn, stdbIdentity);
                         currentStore.onUpdate(() => renderPlayers(currentStore.getPlayers()));
+                        window.gameStore = currentStore; // Update global reference
                     }
 
                     setNetworkLock(false);
@@ -228,16 +258,21 @@ document.addEventListener("DOMContentLoaded", () => {
         // === Navigation Logic ===
         const showView = (view) => {
             console.log(`Navigating to view: ${view}`);
-            if (view === 'home') {
+            // Force close any open tiles
+            toggleQuickHomeTile(true);
+            logSection?.classList.add("collapsed");
+
+            if (view === "home") {
                 homeScreenSection?.classList.remove("hidden");
                 gameSetupSection?.classList.add("hidden");
                 scoreboardSection?.classList.add("hidden");
                 logFab?.classList.add("hidden");
-            } else if (view === 'game') {
+            } else if (view === "game") {
                 homeScreenSection?.classList.add("hidden");
                 gameSetupSection?.classList.remove("hidden");
                 scoreboardSection?.classList.remove("hidden");
                 logFab?.classList.remove("hidden");
+                logFabIcon.textContent = "home";
             }
         };
 
@@ -262,12 +297,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
         joinLobbyBtnHome?.addEventListener("click", () => {
             console.log(`Join Lobby button clicked. stdbConn exists: ${!!stdbConn}`);
+            Logger.info("Join Lobby UI requested.");
             if (!stdbConn) {
                 Logger.error("Not connected to SpacetimeDB. Cannot join.");
                 return;
             }
             showView('game');
             joinLobbyModal?.classList.add("active");
+            setPlayMode("multiplayer");
+            renderLobbyList(); // Refresh list when modal opens
         });
 
         openSettingsBtn?.addEventListener("click", () => {
@@ -278,6 +316,8 @@ document.addEventListener("DOMContentLoaded", () => {
         createConfirmBtn?.addEventListener("click", () => {
             const name = createOwnerNameInput.value.trim();
             const lobbyName = createLobbyNameInput?.value.trim();
+            console.log(`Create Lobby Confirm clicked: Name="${name}", LobbyName="${lobbyName}"`);
+
             if (!name || !lobbyName) {
                 Logger.error("Both player name and lobby name are required.");
                 return;
@@ -285,6 +325,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             setPlayMode("multiplayer");
             if (currentStore instanceof SpacetimeDBStore) {
+                Logger.info(`Creating lobby: ${lobbyName} as ${name}`);
                 currentStore.createLobby(name, lobbyName);
                 createLobbyModal?.classList.remove("active");
             }
@@ -293,10 +334,16 @@ document.addEventListener("DOMContentLoaded", () => {
         joinConfirmBtn?.addEventListener("click", () => {
             const name = joinNameInput.value.trim();
             const code = joinCodeInput.value.trim().toUpperCase();
-            if (!name || !code) return;
+            console.log(`Join Lobby Confirm clicked: Name="${name}", Code="${code}"`);
+
+            if (!name || !code) {
+                Logger.error("Both player name and lobby code are required.");
+                return;
+            }
 
             setPlayMode("multiplayer");
             if (currentStore instanceof SpacetimeDBStore) {
+                Logger.info(`Joining lobby: ${code} as ${name}`);
                 currentStore.joinLobby(name, code);
                 joinLobbyModal?.classList.remove("active");
             }
@@ -333,12 +380,42 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         document.getElementById("close-settings-modal-btn")?.addEventListener("click", () => settingsModal?.classList.remove("active"));
 
+        // Quick Access button handlers
+        quickPlayLocalBtn?.addEventListener("click", () => {
+            toggleQuickHomeTile(true);
+            setPlayMode("local");
+            showView("game");
+        });
+
+        quickHostLobbyBtn?.addEventListener("click", () => {
+            if (!stdbConn) {
+                Logger.error("Not connected to SpacetimeDB.");
+                return;
+            }
+            toggleQuickHomeTile(true);
+            showView("game");
+            createLobbyModal?.classList.add("active");
+        });
+
+        quickJoinLobbyBtn?.addEventListener("click", () => {
+            if (!stdbConn) {
+                Logger.error("Not connected to SpacetimeDB.");
+                return;
+            }
+            toggleQuickHomeTile(true);
+            showView("game");
+            joinLobbyModal?.classList.add("active");
+            setPlayMode("multiplayer");
+            renderLobbyList();
+        });
+
+        quickSettingsBtn?.addEventListener("click", () => {
+            toggleQuickHomeTile(true);
+            settingsModal?.classList.add("active");
+        });
+
         // Ensure initial Home Screen state
-        if (!localStorage.getItem('last_stdb_lobby_code')) {
-            showView('home');
-        } else {
-            showView('game');
-        }
+        showView("home");
 
         // Try to connect, but don't block app startup
         initSpacetime();
@@ -346,9 +423,14 @@ document.addEventListener("DOMContentLoaded", () => {
         // === Lobby Management ===
         const renderLobbyList = () => {
             if (!lobbyListEl) return;
-            if (!(currentStore instanceof SpacetimeDBStore)) return;
+            if (!(currentStore instanceof SpacetimeDBStore)) {
+                console.log("renderLobbyList: currentStore is not SpacetimeDBStore, skipping.");
+                return;
+            }
 
             const lobbies = currentStore.getAvailableLobbies();
+            console.log(`renderLobbyList: Found ${lobbies ? lobbies.length : 0} lobbies.`);
+
             if (!lobbies || lobbies.length === 0) {
                 lobbyListEl.innerHTML = '<div class="lobby-list-empty">Scanning for active lobbies...</div>';
                 return;
@@ -356,6 +438,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             lobbyListEl.innerHTML = "";
             lobbies.forEach(lobby => {
+                console.log(`renderLobbyList: Rendering lobby ${lobby.code} (${lobby.name})`);
                 const item = document.createElement("div");
                 item.className = "lobby-item";
                 item.innerHTML = `
@@ -370,19 +453,28 @@ document.addEventListener("DOMContentLoaded", () => {
                         Connect
                     </button>
                 `;
-                
+
                 const connectBtn = item.querySelector(".lobby-connect-btn");
                 connectBtn.addEventListener("click", () => {
                     const userName = joinNameInput.value.trim();
+                    console.log(`Lobby Connect clicked: Code="${lobby.code}", UserName="${userName}"`);
+
                     if (!userName) {
+                        Logger.warn("User tried to connect to lobby without entering a player name.");
                         alert("Please enter your player name first.");
                         joinNameInput.focus();
                         return;
                     }
                     const code = prompt(`Enter secret code for '${lobby.name}':`, "");
                     if (code) {
-                        currentStore.joinLobby(userName, code.toUpperCase());
+                        const uppercasedCode = code.toUpperCase();
+                        console.log(`Lobby Connect proceeding: Name="${userName}", Code="${uppercasedCode}"`);
+                        if (currentStore.joinLobby(userName, code)) {
+                            showView('game');
+                        }
                         joinLobbyModal?.classList.remove("active");
+                    } else {
+                        console.log("Lobby Connect cancelled by user (no code entered).");
                     }
                 });
 

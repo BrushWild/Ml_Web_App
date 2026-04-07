@@ -41,11 +41,6 @@
         <main>
             <!-- ── Home Screen Card ─────────────────── -->
             <section id="home-screen" class="active">
-                <!-- <div class="home-logo">
-                    <span class="domino-icon">🁣</span>
-                    <h1>Domino Vision</h1>
-                    <p>AI-Powered Domino Scoring</p>
-                </div> -->
                 <div class="home-actions">
                     <button id="play-local-btn" class="success primary">
                         <span class="material-icons">person</span>
@@ -323,7 +318,8 @@
             </div>
 
             <div class="lobby-browser-section" style="margin-top: 24px;">
-                <h3 style="font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--md-on-surface-dim); margin-bottom: 12px; display: flex; align-items: center;">
+                <h3
+                    style="font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--md-on-surface-dim); margin-bottom: 12px; display: flex; align-items: center;">
                     <span class="material-icons" style="font-size: 16px; margin-right: 6px;">explore</span>
                     Available Lobbies
                 </h3>
@@ -391,6 +387,41 @@
             </div>
         </div>
         <div id="log-output"></div>
+    </section>
+    
+    <!-- ── Quick Home Tile (fixed bottom sheet) ─────── -->
+    <section id="quick-home-tile" class="log-tile collapsed" aria-label="Quick Home Actions">
+        <div class="log-tile-header">
+            <h2>
+                <span class="material-icons"
+                    style="font-size:15px;vertical-align:-2px;margin-right:6px;">explore</span>
+                Quick Access
+            </h2>
+            <button id="quick-home-close-btn" class="icon-btn" title="Close" style="width:28px; height:28px; border:none;">
+                <span class="material-icons" style="font-size:18px;">close</span>
+            </button>
+        </div>
+        <div class="home-actions" style="padding: 20px; max-width: 100%; width: 100%;">
+            <button id="quick-play-local-btn" class="success primary" style="width:100%;">
+                <span class="material-icons">person</span>
+                Play Locally (Offline)
+            </button>
+            <div class="home-divider">
+                <span>OR MULTIPLAYER</span>
+            </div>
+            <button id="quick-host-lobby-btn" style="width:100%;">
+                <span class="material-icons">group_add</span>
+                Create Lobby (Host)
+            </button>
+            <button id="quick-join-lobby-btn" class="outlined" style="width:100%;">
+                <span class="material-icons">group</span>
+                Join Existing Lobby
+            </button>
+            <button id="quick-settings-btn" class="outlined" style="width:100%; border-color: var(--md-outline-strong); color: var(--md-on-surface-sub); margin-top: 8px;">
+                <span class="material-icons">wifi_find</span>
+                Network Settings
+            </button>
+        </div>
     </section>
 
     <!-- ── Log FAB — fixed bottom-right toggle ─────────── -->
