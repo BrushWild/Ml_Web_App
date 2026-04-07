@@ -692,6 +692,22 @@ li:hover {
     border-color: var(--md-outline-strong);
 }
 
+li.disconnected {
+    opacity: 0.65;
+    filter: grayscale(0.3);
+    border-style: dashed;
+    border-color: var(--md-outline-strong);
+    background: var(--md-surface-variant);
+}
+
+.offline-icon {
+    color: var(--md-error);
+    font-size: 20px;
+    vertical-align: middle;
+    margin-left: 6px;
+    cursor: help;
+}
+
 /* Leading avatar / rank badge */
 li .player-rank {
     display: flex;

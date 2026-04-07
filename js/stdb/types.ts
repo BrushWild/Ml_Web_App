@@ -24,6 +24,7 @@ export const Player = __t.object("Player", {
   clientId: __t.identity(),
   name: __t.string(),
   score: __t.i32(),
+  isOnline: __t.bool(),
 });
 export type Player = __Infer<typeof Player>;
 

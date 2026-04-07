@@ -1,6 +1,11 @@
 import * as stdb from 'stdb';
 import { SpacetimeDBStore } from 'stores/SpacetimeDBStore';
 
+const SERVERS = [
+    { name: "Spacetime Maincloud", uri: "wss://maincloud.spacetimedb.com" },
+    { name: "Localhost (Dev Server)", uri: "ws://localhost:3000" }
+];
+
 // UI Helpers
 const $ = (id) => document.getElementById(id);
 const logEl = document.getElementById('debug-logs');
@@ -18,13 +23,38 @@ function log(msg, type = 'info') {
 // State
 let store = null;
 let conn = null;
+let connectionAttemptTimeout = null;
+let lastSuccessfulUri = localStorage.getItem('stdb_server_uri');
+let currentWaterfallIndex = 0;
 
-async function init() {
-    const uri = $('input-uri').value;
-    const dbName = $('input-dbname').value;
+function updateActiveServerUI(uri, status = "CONNECTED") {
+    const server = SERVERS.find(s => s.uri === uri) || { name: "Custom Server", uri: uri };
+    if ($('display-active-server')) $('display-active-server').textContent = server.name;
+    const statusEl = $('conn-status');
+    if (statusEl) {
+        statusEl.textContent = status;
+        statusEl.className = status === 'CONNECTED' ? 'status-connected' : 
+                           (status === 'CONNECTING...' ? 'status-connecting' : 'status-disconnected');
+    }
+    if ($('server-select')) $('server-select').value = uri;
+}
+
+async function init(preferredUri = null) {
+    const uri = preferredUri || localStorage.getItem('stdb_server_uri') || SERVERS[0].uri;
+    const dbName = "domino-vision";
     const token = localStorage.getItem('stdb_identity_token');
 
+    if (connectionAttemptTimeout) clearTimeout(connectionAttemptTimeout);
+    if (conn) conn.disconnect();
+
+    updateActiveServerUI(uri, "CONNECTING...");
     log(`Connecting to ${uri} (DB: ${dbName})...`);
+
+    // 5 second timeout
+    connectionAttemptTimeout = setTimeout(() => {
+        log(`Connection to ${uri} timed out after 5s.`, 'warn');
+        handleConnectionFailure(uri);
+    }, 5000);
     
     try {
         conn = stdb.DbConnection.builder()
@@ -32,11 +62,14 @@ async function init() {
             .withDatabaseName(dbName)
             .withToken(token)
             .onConnect((_ctx, identity, token) => {
+                if (connectionAttemptTimeout) clearTimeout(connectionAttemptTimeout);
                 localStorage.setItem('stdb_identity_token', token);
+                localStorage.setItem('stdb_server_uri', uri);
+                lastSuccessfulUri = uri;
+
                 $('display-identity').textContent = identity.toHexString();
-                $('conn-status').textContent = 'CONNECTED';
-                $('conn-status').className = 'status-connected';
-                log("Connected successfully.");
+                updateActiveServerUI(uri, "CONNECTED");
+                log(`Connected successfully to ${uri}`);
                 
                 // Subscription is required for the store to function
                 conn.subscriptionBuilder()
@@ -50,20 +83,45 @@ async function init() {
                     .subscribe(['SELECT * FROM lobby', 'SELECT * FROM player', 'SELECT * FROM user']);
             })
             .onDisconnect(() => {
-                $('conn-status').textContent = 'DISCONNECTED';
-                $('conn-status').className = 'status-disconnected';
+                updateActiveServerUI(uri, "DISCONNECTED");
                 log("Disconnected.", 'warn');
             })
             .onConnectError((_ctx, err) => {
+                if (connectionAttemptTimeout) clearTimeout(connectionAttemptTimeout);
                 log(`Connection Error: ${err}`, 'error');
+                
                 if (err && (err.toString().includes("Unauthorized") || err.toString().includes("Failed to verify token"))) {
                     log("Identity token rejected. Clearing local token...", 'warn');
                     localStorage.removeItem('stdb_identity_token');
+                    init(uri); // Try again without token
+                } else {
+                    handleConnectionFailure(uri);
                 }
             })
             .build();
     } catch (err) {
         log(`Failed to build connection: ${err}`, 'error');
+    }
+}
+
+function handleConnectionFailure(failedUri) {
+    // Revert Logic
+    if (lastSuccessfulUri && failedUri !== lastSuccessfulUri) {
+        log(`Reverting to last successful connection: ${lastSuccessfulUri}`, 'info');
+        init(lastSuccessfulUri);
+        return;
+    }
+
+    // Waterfall logic
+    currentWaterfallIndex++;
+    if (currentWaterfallIndex < SERVERS.length) {
+        const nextUri = SERVERS[currentWaterfallIndex].uri;
+        log(`Waterfall: Trying next server ${SERVERS[currentWaterfallIndex].name}...`);
+        init(nextUri);
+    } else {
+        log("Waterfall exhausted. No servers available.", 'error');
+        updateActiveServerUI(failedUri, "OFFLINE");
+        currentWaterfallIndex = 0;
     }
 }
 
@@ -168,22 +226,27 @@ window.joinLobby = (code) => {
 };
 
 // Event Listeners
+// Populate Server Select
+const serverSelect = $('server-select');
+if (serverSelect) {
+    SERVERS.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s.uri;
+        opt.textContent = s.name;
+        serverSelect.appendChild(opt);
+    });
+    serverSelect.addEventListener("change", (e) => {
+        const newUri = e.target.value;
+        log(`Switching to ${SERVERS.find(s => s.uri === newUri)?.name || newUri}...`);
+        localStorage.removeItem("stdb_identity_token"); 
+        currentWaterfallIndex = 0;
+        init(newUri);
+    });
+}
+
 $('btn-reconnect').addEventListener('click', () => {
     log("Resetting connection...");
-    if (conn) conn.close();
-    init();
-});
-
-$('btn-set-local').addEventListener('click', () => {
-    $('input-uri').value = "ws://localhost:3000";
-    localStorage.removeItem("stdb_identity_token");
-    log("URI set to Localhost (Token cleared).");
-});
-
-$('btn-set-maincloud').addEventListener('click', () => {
-    $('input-uri').value = "wss://maincloud.spacetimedb.com";
-    localStorage.removeItem("stdb_identity_token");
-    log("URI set to Maincloud (Token cleared).");
+    init(localStorage.getItem('stdb_server_uri'));
 });
 
 $('btn-clear-storage').addEventListener('click', () => {

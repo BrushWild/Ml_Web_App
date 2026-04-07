@@ -3,6 +3,7 @@ use spacetimedb::rand::RngCore;
 
 // --- Tables ---
 
+#[derive(Clone)]
 #[table(accessor = user, public)]
 pub struct User {
     #[primary_key]
@@ -10,6 +11,7 @@ pub struct User {
     pub name: String,
 }
 
+#[derive(Clone)]
 #[table(accessor = lobby, public)]
 pub struct Lobby {
     #[primary_key]
@@ -19,6 +21,7 @@ pub struct Lobby {
     pub is_public: bool,
 }
 
+#[derive(Clone)]
 #[table(accessor = player, public)]
 pub struct Player {
     #[primary_key]
@@ -29,6 +32,7 @@ pub struct Player {
     pub client_id: Identity,
     pub name: String,
     pub score: i32,
+    pub is_online: bool,
 }
 
 // --- Reducers ---
@@ -41,22 +45,49 @@ pub fn init(_ctx: &ReducerContext) {
 #[reducer(client_connected)]
 pub fn client_connected(ctx: &ReducerContext) {
     let identity = ctx.sender();
-    if ctx.db.user().identity().find(identity).is_none() {
+    if let Some(_user) = ctx.db.user().identity().find(identity) {
+        log::info!("User reconnected: {:?}", identity);
+        
+        let mut reconnected = false;
+        for player in ctx.db.player().iter() {
+            if player.client_id == identity {
+                ctx.db.player().player_id().update(Player {
+                    is_online: true,
+                    ..player.clone()
+                });
+                log::info!("Player {} re-joined lobby {} automatically", player.player_id, player.lobby_code);
+                reconnected = true;
+            }
+        }
+        if !reconnected {
+            log::info!("No existing player record found for reconnected user {:?}", identity);
+        }
+    } else {
         ctx.db.user().insert(User {
             identity,
             name: "Anonymous".to_string(),
         });
         log::info!("New user connected: {:?}", identity);
-    } else {
-        log::info!("User reconnected: {:?}", identity);
     }
 }
 
 #[reducer(client_disconnected)]
 pub fn client_disconnected(ctx: &ReducerContext) {
-    if let Err(e) = leave_all_lobbies(ctx, ctx.sender()) {
-        log::error!("Error cleaning up lobbies for disconnected client: {}", e);
+    let identity = ctx.sender();
+    log::info!("Client disconnected: {:?}", identity);
+
+    // Instead of leaving all lobbies, mark them as offline
+    let mut count = 0;
+    for player in ctx.db.player().iter() {
+        if player.client_id == identity {
+            ctx.db.player().player_id().update(Player {
+                is_online: false,
+                ..player.clone()
+            });
+            count += 1;
+        }
     }
+    log::info!("Marked {} player records as offline for {:?}", count, identity);
 }
 
 #[reducer]
@@ -71,7 +102,7 @@ pub fn update_user_name(ctx: &ReducerContext, name: String) -> Result<(), String
     if let Some(user) = ctx.db.user().identity().find(identity) {
         ctx.db.user().identity().update(User {
             name: name.clone(),
-            ..user
+            ..user.clone()
         });
 
         // Update all player records for this user in any lobbies
@@ -80,7 +111,7 @@ pub fn update_user_name(ctx: &ReducerContext, name: String) -> Result<(), String
             if player.client_id == identity {
                 ctx.db.player().player_id().update(Player {
                     name: name.clone(),
-                    ..player
+                    ..player.clone()
                 });
                 count += 1;
             }
@@ -128,6 +159,7 @@ pub fn create_lobby(ctx: &ReducerContext, user_name: String, lobby_name: String,
         client_id: ctx.sender(),
         name: ctx.db.user().identity().find(ctx.sender()).unwrap().name,
         score: 0,
+        is_online: true,
     });
 
     log::info!("Lobby created: {} by {:?}", lobby_code, ctx.sender());
@@ -159,6 +191,7 @@ pub fn join_lobby(ctx: &ReducerContext, name: String, code: String) -> Result<()
         client_id: ctx.sender(),
         name: ctx.db.user().identity().find(ctx.sender()).unwrap().name,
         score: 0,
+        is_online: true,
     });
 
     log::info!("join_lobby success: User {:?} joined lobby {}", player.player_id, lobby_code);
@@ -220,7 +253,34 @@ pub fn update_score(ctx: &ReducerContext, player_id: u64, new_score: i32) -> Res
 
     ctx.db.player().player_id().update(Player {
         score: new_score,
-        ..player
+        ..player.clone()
+    });
+
+    Ok(())
+}
+
+#[reducer]
+pub fn rename_player(ctx: &ReducerContext, player_id: u64, new_name: String) -> Result<(), String> {
+    log::info!("rename_player called for id: {}, new_name: {}", player_id, new_name);
+
+    let player = ctx.db.player().player_id().find(&player_id)
+        .ok_or_else(|| "Player not found".to_string())?;
+
+    let lobby = ctx.db.lobby().lobby_code().find(&player.lobby_code)
+        .ok_or_else(|| "Lobby not found".to_string())?;
+
+    // Authorization: Only the player themselves or the lobby owner can rename
+    if player.client_id != ctx.sender() && lobby.owner_id != ctx.sender() {
+        return Err("Not authorized to rename this player".to_string());
+    }
+
+    if new_name.trim().is_empty() {
+        return Err("Name cannot be empty".to_string());
+    }
+
+    ctx.db.player().player_id().update(Player {
+        name: new_name.trim().to_string(),
+        ..player.clone()
     });
 
     Ok(())
@@ -260,7 +320,7 @@ pub fn remove_player(ctx: &ReducerContext, player_id: u64) -> Result<(), String>
                 
                 ctx.db.lobby().lobby_code().update(Lobby {
                     owner_id: next_owner.client_id,
-                    ..lobby
+                    ..lobby.clone()
                 });
                 log::info!("Lobby {} ownership transferred to {:?}", lobby_code, next_owner.client_id);
             }

@@ -359,22 +359,26 @@
     <!-- ── Network Settings Modal ─────────────────── -->
     <div id="settings-modal" class="modal" role="dialog" aria-modal="true">
         <div class="modal-content">
-            <span class="close-btn" id="close-settings-modal-btn" role="button" aria-label="Close">&#xD7;</span>
-            <h2>Network Settings</h2>
             <div class="field-group" style="text-align: left; margin-top: 16px;">
-                <label class="field-label">Quick Select Server</label>
-                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-                    <button id="server-local-btn" class="outlined" style="flex: 1; padding: 8px; font-size: 11px;">Localhost</button>
-                    <button id="server-maincloud-btn" class="outlined" style="flex: 1; padding: 8px; font-size: 11px;">Maincloud</button>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <label class="field-label" style="margin-bottom: 0;">Active Server</label>
+                    <span id="active-server-badge" class="badge" style="background: var(--md-secondary-container); color: var(--md-on-secondary-container); font-size: 10px; padding: 2px 8px; border-radius: 20px;">Disconnecting...</span>
                 </div>
-                <label class="field-label" for="server-uri">Manual Server URI</label>
-                <input type="text" id="server-uri" placeholder="ws://localhost:3000" value="ws://localhost:3000">
-                <p style="font-size: 11px; color: var(--md-on-surface-dim); margin-top: 8px;">
-                    Change this to connect to a different SpacetimeDB node.
+                <div id="active-server-name" style="font-weight: bold; font-size: 16px; color: var(--md-primary-dark); margin-bottom: 20px;">Searching...</div>
+
+                <label class="field-label" for="server-select">Change Server</label>
+                <div class="field-group" style="position: relative;">
+                    <select id="server-select" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--md-outline); background: var(--md-surface); color: var(--md-on-surface); font-family: inherit; font-size: 14px; appearance: none; cursor: pointer;">
+                        <!-- Options injected by JS -->
+                    </select>
+                    <span class="material-icons" style="position: absolute; right: 12px; top: 12px; pointer-events: none; color: var(--md-on-surface-sub); font-size: 20px;">expand_more</span>
+                </div>
+                <p style="font-size: 11px; color: var(--md-on-surface-dim); margin-top: 12px; line-height: 1.4;">
+                    Selecting a new server will attempt to connect immediately. If it fails, the app will revert to your last successful connection.
                 </p>
             </div>
             <div class="modal-controls" style="margin-top:24px;">
-                <button id="settings-save-btn">Save & Apply</button>
+                <button id="close-settings-btn" class="outlined" style="width: 100%;">Close Settings</button>
             </div>
         </div>
     </div>

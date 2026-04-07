@@ -7845,6 +7845,12 @@ var remove_player_reducer_default = {
   playerId: t.u64()
 };
 
+// js/stdb/rename_player_reducer.ts
+var rename_player_reducer_default = {
+  playerId: t.u64(),
+  newName: t.string()
+};
+
 // js/stdb/update_score_reducer.ts
 var update_score_reducer_default = {
   playerId: t.u64(),
@@ -7870,7 +7876,8 @@ var player_table_default = t.row({
   lobbyCode: t.string().name("lobby_code"),
   clientId: t.identity().name("client_id"),
   name: t.string(),
-  score: t.i32()
+  score: t.i32(),
+  isOnline: t.bool().name("is_online")
 });
 
 // js/stdb/user_table.ts
@@ -7923,6 +7930,7 @@ var reducersSchema = reducers(
   reducerSchema("delete_lobby", delete_lobby_reducer_default),
   reducerSchema("join_lobby", join_lobby_reducer_default),
   reducerSchema("remove_player", remove_player_reducer_default),
+  reducerSchema("rename_player", rename_player_reducer_default),
   reducerSchema("update_score", update_score_reducer_default),
   reducerSchema("update_user_name", update_user_name_reducer_default)
 );

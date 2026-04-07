@@ -10,6 +10,7 @@ import CreateLobbyReducer from "../create_lobby_reducer";
 import DeleteLobbyReducer from "../delete_lobby_reducer";
 import JoinLobbyReducer from "../join_lobby_reducer";
 import RemovePlayerReducer from "../remove_player_reducer";
+import RenamePlayerReducer from "../rename_player_reducer";
 import UpdateScoreReducer from "../update_score_reducer";
 import UpdateUserNameReducer from "../update_user_name_reducer";
 
@@ -17,6 +18,7 @@ export type CreateLobbyParams = __Infer<typeof CreateLobbyReducer>;
 export type DeleteLobbyParams = __Infer<typeof DeleteLobbyReducer>;
 export type JoinLobbyParams = __Infer<typeof JoinLobbyReducer>;
 export type RemovePlayerParams = __Infer<typeof RemovePlayerReducer>;
+export type RenamePlayerParams = __Infer<typeof RenamePlayerReducer>;
 export type UpdateScoreParams = __Infer<typeof UpdateScoreReducer>;
 export type UpdateUserNameParams = __Infer<typeof UpdateUserNameReducer>;
 

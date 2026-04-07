@@ -4,6 +4,11 @@ import { processImageForScore, processImageForScoreTwoPass } from './vision.js';
 import * as stdb from './stdb.bundle.js';
 import { LocalStorageStore } from './stores/LocalStorageStore.js';
 import { SpacetimeDBStore } from './stores/SpacetimeDBStore.js';
+const SERVERS = [
+    { name: "Spacetime Maincloud", uri: "wss://maincloud.spacetimedb.com" },
+    { name: "Self Hosted", uri: "wss://dominohost.brushplusplus.com" },
+    { name: "Localhost (Dev Server)", uri: "ws://localhost:3000" }
+];
 
 document.addEventListener("DOMContentLoaded", () => {
     console.log("app.js: DOMContentLoaded fired");
@@ -79,7 +84,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const joinNameInput = document.getElementById("join-name");
         const joinCodeInput = document.getElementById("join-code");
         const lobbyListEl = document.getElementById("lobby-list");
-        const serverUriInput = document.getElementById("server-uri");
+        const serverSelect = document.getElementById("server-select");
+        const activeServerNameEl = document.getElementById("active-server-name");
+        const activeServerBadge = document.getElementById("active-server-badge");
+        const closeSettingsBtn = document.getElementById("close-settings-btn");
 
         // === Game State ===
         let playMode = 'local'; // 'local' or 'multiplayer'
@@ -90,10 +98,14 @@ document.addEventListener("DOMContentLoaded", () => {
         let currentScore = 0;
         let isNetworkLocked = false;
         let reconnectTimeout = null;
+        let connectionAttemptTimeout = null;
+        let lastSuccessfulUri = localStorage.getItem('stdb_server_uri');
+        let currentWaterfallIndex = 0;
 
         // === SpacetimeDB State ===
         let stdbConn = null;
         let stdbIdentity = null;
+        let multiplayerStore = null;
 
         // === Log Tile Toggle ===
         const toggleLogTile = () => {
@@ -205,24 +217,88 @@ document.addEventListener("DOMContentLoaded", () => {
             renderPlayers(currentStore.getPlayers());
         };
 
-        const initSpacetime = () => {
-            const uri = localStorage.getItem('stdb_server_uri') || 'ws://localhost:3000';
+        const updateActiveServerUI = (uri, status = "Connected") => {
+            const server = SERVERS.find(s => s.uri === uri) || { name: "Custom Server", uri: uri };
+            if (activeServerNameEl) activeServerNameEl.textContent = server.name;
+            if (activeServerBadge) {
+                activeServerBadge.textContent = status;
+                activeServerBadge.style.background = status === "Connected" ? "var(--md-success-container)" :
+                    (status === "Connecting..." ? "var(--md-secondary-container)" : "var(--md-error-container)");
+                activeServerBadge.style.color = status === "Connected" ? "var(--md-on-success-container)" :
+                    (status === "Connecting..." ? "var(--md-on-secondary-container)" : "var(--md-on-error-container)");
+            }
+            if (serverSelect) serverSelect.value = uri;
+        };
+
+        const initSpacetime = (preferredUri = null) => {
+            const uri = preferredUri || localStorage.getItem('stdb_server_uri') || SERVERS[0].uri;
             const token = localStorage.getItem('stdb_identity_token');
 
+            if (connectionAttemptTimeout) clearTimeout(connectionAttemptTimeout);
+            if (stdbConn) stdbConn.disconnect();
+
+            updateActiveServerUI(uri, "Connecting...");
             console.log(`initSpacetime: connecting to ${uri}...`);
+
+            // 5 second timeout for the Waterfall
+            connectionAttemptTimeout = setTimeout(() => {
+                Logger.warn(`Connection to ${uri} timed out after 5s.`);
+                handleConnectionFailure(uri);
+            }, 5000);
+
             stdb.DbConnection.builder()
                 .withUri(uri)
                 .withDatabaseName('domino-vision')
                 .withToken(token)
                 .onConnect((conn, identity, token) => {
+                    if (connectionAttemptTimeout) clearTimeout(connectionAttemptTimeout);
                     console.log("SpacetimeDB Connected successfully");
                     stdbConn = conn;
                     stdbIdentity = identity;
+                    lastSuccessfulUri = uri;
+                    localStorage.setItem('stdb_server_uri', uri);
+                    localStorage.setItem('stdb_identity_token', token);
+
+                    multiplayerStore = new SpacetimeDBStore(stdbConn, stdbIdentity);
+                    multiplayerStore.onUpdate(() => {
+                        // Regular UI update
+                        if (playMode === 'multiplayer') renderPlayers();
+                        renderLobbyList();
+
+                        // Secondary Auto-Restore Check: If data arrives after onApplied
+                        if (playMode !== 'multiplayer') {
+                            const lobbyInfo = multiplayerStore.getLobbyInfo();
+                            if (lobbyInfo) {
+                                Logger.info(`Auto-restoring session from onUpdate for lobby: ${lobbyInfo.code}`);
+                                playMode = 'multiplayer';
+                                currentStore = multiplayerStore;
+                                window.gameStore = currentStore;
+                                showView('game');
+                            }
+                        }
+                    });
+
+                    updateActiveServerUI(uri, "Connected");
+
                     try {
                         stdbConn.subscriptionBuilder()
                             .onApplied(() => {
-                                Logger.info("SpacetimeDB Subscribed successfully");
-                                renderPlayers(currentStore.getPlayers());
+                                Logger.info("SpacetimeDB Subscribed: onApplied fired.");
+                                
+                                // Auto-Restore Session: Attempt check
+                                const lobbyInfo = multiplayerStore.getLobbyInfo();
+                                if (lobbyInfo && playMode !== 'multiplayer') {
+                                    Logger.info(`Auto-restoring session from onApplied for lobby: ${lobbyInfo.code}`);
+                                    playMode = 'multiplayer';
+                                    currentStore = multiplayerStore;
+                                    window.gameStore = currentStore;
+                                    showView('game');
+                                } else {
+                                    Logger.info("onApplied: Auto-restore check skipped (no lobby found yet).");
+                                }
+
+                                renderPlayers();
+                                renderLobbyList();
                             })
                             .onError((err) => {
                                 Logger.error("SpacetimeDB Subscription failed: " + JSON.stringify(err));
@@ -231,33 +307,76 @@ document.addEventListener("DOMContentLoaded", () => {
                     } catch (e) {
                         Logger.error("SpacetimeDB Subscription error: " + e);
                     }
-                    localStorage.setItem('stdb_identity_token', token);
 
-                    if (playMode === 'multiplayer' && !(currentStore instanceof SpacetimeDBStore)) {
-                        currentStore = new SpacetimeDBStore(stdbConn, stdbIdentity);
-                        currentStore.onUpdate(() => renderPlayers(currentStore.getPlayers()));
-                        window.gameStore = currentStore; // Update global reference
+                    if (playMode === 'multiplayer') {
+                        currentStore = multiplayerStore;
+                        window.gameStore = currentStore;
                     }
 
                     setNetworkLock(false);
-                    Logger.info("SpacetimeDB connected.");
+                    Logger.info(`Connected to ${SERVERS.find(s => s.uri === uri)?.name || uri}`);
                 })
                 .onDisconnect(() => {
                     Logger.error("SpacetimeDB disconnected.");
                     stdbConn = null;
-                    if (playMode === 'multiplayer') {
-                        setNetworkLock(true);
-                    }
+                    updateActiveServerUI(uri, "Disconnected");
+                    if (playMode === 'multiplayer') setNetworkLock(true);
                 })
                 .onConnectError((_ctx, err) => {
+                    if (connectionAttemptTimeout) clearTimeout(connectionAttemptTimeout);
                     Logger.error(`SpacetimeDB Connection Error: ${err}`);
+
                     if (err && (err.toString().includes("Unauthorized") || err.toString().includes("Failed to verify token"))) {
-                        Logger.warn("Identity token rejected. Clearing local token to allow re-authentication...");
+                        Logger.warn("Identity token rejected. Clearing local token...");
                         localStorage.removeItem('stdb_identity_token');
+                        // Try same URI again without token
+                        initSpacetime(uri);
+                    } else {
+                        handleConnectionFailure(uri);
                     }
                 })
                 .build();
         };
+
+        const handleConnectionFailure = (failedUri) => {
+            Logger.warn(`Failed to connect to ${failedUri}.`);
+
+            // Revert Logic: If this was a manual selection that failed, go back to last working
+            if (lastSuccessfulUri && failedUri !== lastSuccessfulUri) {
+                Logger.info(`Reverting to last successful connection: ${lastSuccessfulUri}`);
+                initSpacetime(lastSuccessfulUri);
+                return;
+            }
+
+            // Waterfall Logic: Try next in list
+            currentWaterfallIndex++;
+            if (currentWaterfallIndex < SERVERS.length) {
+                const nextUri = SERVERS[currentWaterfallIndex].uri;
+                Logger.info(`Waterfall: Trying next server ${SERVERS[currentWaterfallIndex].name}...`);
+                initSpacetime(nextUri);
+            } else {
+                Logger.error("Waterfall exhausted. No servers available.");
+                updateActiveServerUI(failedUri, "Offline");
+                currentWaterfallIndex = 0; // Reset for next manual attempt
+            }
+        };
+
+        // Populate Server Select
+        if (serverSelect) {
+            SERVERS.forEach(s => {
+                const opt = document.createElement("option");
+                opt.value = s.uri;
+                opt.textContent = s.name;
+                serverSelect.appendChild(opt);
+            });
+            serverSelect.addEventListener("change", (e) => {
+                const newUri = e.target.value;
+                Logger.info(`Switching to ${newUri}...`);
+                localStorage.removeItem("stdb_identity_token"); // Proactively clear on switch
+                currentWaterfallIndex = 0; // Reset waterfall on manual selection
+                initSpacetime(newUri);
+            });
+        }
 
         // === Navigation Logic ===
         const showView = (view) => {
@@ -362,39 +481,8 @@ document.addEventListener("DOMContentLoaded", () => {
             showView('home');
         });
 
-        settingsSaveBtn?.addEventListener("click", () => {
-            const uri = serverUriInput.value.trim();
-            if (uri) {
-                localStorage.setItem("stdb_server_uri", uri);
-                localStorage.removeItem("stdb_identity_token"); // Clear token as it is node-specific
-                settingsModal?.classList.remove("active");
-                Logger.info(`Server URI updated to ${uri}. Please refresh to apply.`);
-                if (confirm("Server settings changed. Refresh now to apply?")) {
-                    window.location.reload();
-                }
-            }
-        });
-
-        // Quick Select Server Handlers
-        document.getElementById("server-local-btn")?.addEventListener("click", () => {
-            serverUriInput.value = "ws://localhost:3000";
-            Logger.info("Server URI set to Localhost.");
-        });
-        document.getElementById("server-maincloud-btn")?.addEventListener("click", () => {
-            serverUriInput.value = "wss://maincloud.spacetimedb.com";
-            Logger.info("Server URI set to Maincloud.");
-        });
-
-        // Close buttons for new modals
-        document.getElementById("close-create-modal-btn")?.addEventListener("click", () => {
-            createLobbyModal?.classList.remove("active");
-            showView('home');
-        });
-        document.getElementById("close-join-modal-btn")?.addEventListener("click", () => {
-            joinLobbyModal?.classList.remove("active");
-            showView('home');
-        });
         document.getElementById("close-settings-modal-btn")?.addEventListener("click", () => settingsModal?.classList.remove("active"));
+        closeSettingsBtn?.addEventListener("click", () => settingsModal?.classList.remove("active"));
 
         // Quick Access button handlers
         quickPlayLocalBtn?.addEventListener("click", () => {
@@ -436,15 +524,18 @@ document.addEventListener("DOMContentLoaded", () => {
         // Try to connect, but don't block app startup
         initSpacetime();
 
-        // === Lobby Management ===
         const renderLobbyList = () => {
             if (!lobbyListEl) return;
-            if (!(currentStore instanceof SpacetimeDBStore)) {
-                console.log("renderLobbyList: currentStore is not SpacetimeDBStore, skipping.");
+
+            // Use background store for discovery even in Local mode
+            const discoveryStore = (currentStore instanceof SpacetimeDBStore) ? currentStore : multiplayerStore;
+
+            if (!discoveryStore) {
+                // Silent if not connected yet
                 return;
             }
 
-            const lobbies = currentStore.getAvailableLobbies();
+            const lobbies = discoveryStore.getAvailableLobbies();
             console.log(`renderLobbyList: Found ${lobbies ? lobbies.length : 0} lobbies.`);
 
             if (!lobbies || lobbies.length === 0) {
@@ -481,7 +572,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         joinNameInput.focus();
                         return;
                     }
-                    
+
                     console.log(`Lobby Connect proceeding: Name="${userName}", Code="${lobby.code}"`);
                     currentStore.joinLobby(userName, lobby.code);
                     joinLobbyModal?.classList.remove("active");
@@ -511,10 +602,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
             sortedPlayers.forEach((player, index) => {
                 const li = document.createElement("li");
+                const isOffline = playMode === 'multiplayer' && player.isOnline === false;
+                if (isOffline) li.classList.add("disconnected");
+
                 li.innerHTML = `
                     <div class="player-rank">${index + 1}</div>
                     <div class="player-info">
-                        <span class="player-name">${player.name}${player.isSelf ? ' <small>(You)</small>' : ''}</span>
+                        <span class="player-name">
+                            ${player.name}${player.isSelf ? ' <small>(You)</small>' : ''}
+                            ${isOffline ? ' <span class="material-icons offline-icon" title="Player Disconnected">cloud_off</span>' : ''}
+                        </span>
                         <div class="player-score-container">
                             <span class="player-score-large">${player.score}</span>
                             <span class="player-score-pts">pts</span>

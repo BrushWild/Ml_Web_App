@@ -41,6 +41,7 @@ export class SpacetimeDBStore extends GameStore {
 
         const players = Array.from(this.conn.db.player.iter());
         if (players.length === 0) {
+            console.log("SpacetimeDB Store: getLobbyInfo - no players in table yet.");
             return null;
         }
 
@@ -53,11 +54,15 @@ export class SpacetimeDBStore extends GameStore {
             return playerIdentityHex === selfIdentityHex;
         });
 
+        console.log(`SpacetimeDB Store: getLobbyInfo - found ${players.length} total players. userPlayer:`, player ? "Found" : "Not Found");
+
         if (!player) {
             return null;
         }
 
         const lobby = Array.from(this.conn.db.lobby.iter()).find(l => l.lobbyCode === player.lobbyCode);
+        console.log(`SpacetimeDB Store: getLobbyInfo - looking for lobby code "${player.lobbyCode}". lobby:`, lobby ? "Found" : "Not Found");
+
         if (!lobby) {
             console.warn(`SpacetimeDB Store: Player is in lobby ${player.lobbyCode}, but lobby table does not contain it.`);
             return null;
@@ -127,6 +132,7 @@ export class SpacetimeDBStore extends GameStore {
                 score: p.score,
                 clientId: playerIdentityHex,
                 isSelf: isSelf,
+                isOnline: p.is_online,
                 canEdit: isSelf || isOwner
             };
         }).sort((a, b) => b.score - a.score);
@@ -238,14 +244,17 @@ export class SpacetimeDBStore extends GameStore {
 
     editPlayer(playerId, name, score) {
         console.log(`SpacetimeDB: Editing player ${playerId} to ${name} with score ${score}`);
-        // FIXED: Passing arguments as a single named object
-        this.conn.reducers.updateUserName({
-            name: name
-        });
-        this.conn.reducers.updateScore({
-            playerId: BigInt(playerId),
-            newScore: score
-        });
+        // FIXED: Using targeted rename_player instead of global updateUserName
+        if (this.conn.reducers && this.conn.reducers.renamePlayer) {
+            this.conn.reducers.renamePlayer({
+                playerId: BigInt(playerId),
+                newName: name
+            });
+        } else {
+            console.warn("SpacetimeDB: renamePlayer reducer not available in bindings yet. Falling back to targeted score only.");
+        }
+
+        this.updateScore(playerId, score);
     }
 
     resetScores() {
