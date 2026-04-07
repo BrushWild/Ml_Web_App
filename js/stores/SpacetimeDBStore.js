@@ -173,15 +173,21 @@ export class SpacetimeDBStore extends GameStore {
     }
 
     deleteLobby(code) {
-        console.log(`SpacetimeDB: Delete attempt for lobby "${code}"`);
         if (!code || typeof code !== 'string') {
-            console.error("SpacetimeDB: Cannot delete lobby without a valid code");
+            console.error("SpacetimeDB Store: Cannot delete lobby without a valid code");
             return;
         }
-        console.log(`SpacetimeDB: Delete attempt for lobby "${code}"`);
-        this.conn.reducers.deleteLobby({
-            code: code.trim().to_uppercase()
-        });
+        
+        const cleanCode = code.trim().toUpperCase();
+        console.log(`SpacetimeDB Store: Calling deleteLobby reducer for code "${cleanCode}"`);
+        
+        if (this.conn.reducers && this.conn.reducers.deleteLobby) {
+            this.conn.reducers.deleteLobby({
+                code: cleanCode
+            });
+        } else {
+            console.error("SpacetimeDB Store: deleteLobby reducer not found on connection object");
+        }
     }
 
     leaveLobby() {

@@ -169,9 +169,14 @@ pub fn join_lobby(ctx: &ReducerContext, name: String, code: String) -> Result<()
 
 #[reducer]
 pub fn delete_lobby(ctx: &ReducerContext, code: String) -> Result<(), String> {
+    log::info!("delete_lobby called with code: '{}'", code);
     let lobby_code = code.trim().to_uppercase();
-    let lobby = ctx.db.lobby().lobby_code().find(&lobby_code)
-        .ok_or_else(|| "Lobby not found".to_string())?;
+    let lobby_opt = ctx.db.lobby().lobby_code().find(&lobby_code);  
+    if lobby_opt.is_none() {
+        log::error!("delete_lobby failed: Lobby {} does not exist", lobby_code);
+        return Err(format!("Lobby {} does not exist", lobby_code));
+    }
+    let lobby = lobby_opt.unwrap();
 
     // Authorization: Only the owner can delete the entire lobby
     if ctx.sender() != lobby.owner_id {
