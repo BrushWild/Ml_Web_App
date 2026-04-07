@@ -56,6 +56,10 @@ async function init() {
             })
             .onConnectError((_ctx, err) => {
                 log(`Connection Error: ${err}`, 'error');
+                if (err && (err.toString().includes("Unauthorized") || err.toString().includes("Failed to verify token"))) {
+                    log("Identity token rejected. Clearing local token...", 'warn');
+                    localStorage.removeItem('stdb_identity_token');
+                }
             })
             .build();
     } catch (err) {
@@ -170,6 +174,18 @@ $('btn-reconnect').addEventListener('click', () => {
     init();
 });
 
+$('btn-set-local').addEventListener('click', () => {
+    $('input-uri').value = "ws://localhost:3000";
+    localStorage.removeItem("stdb_identity_token");
+    log("URI set to Localhost (Token cleared).");
+});
+
+$('btn-set-maincloud').addEventListener('click', () => {
+    $('input-uri').value = "wss://maincloud.spacetimedb.com";
+    localStorage.removeItem("stdb_identity_token");
+    log("URI set to Maincloud (Token cleared).");
+});
+
 $('btn-clear-storage').addEventListener('click', () => {
     if (confirm("Clear local storage (identity token & settings)?")) {
         localStorage.clear();
@@ -180,13 +196,13 @@ $('btn-clear-storage').addEventListener('click', () => {
 $('btn-create').addEventListener('click', () => {
     const name = $('create-user-name').value;
     const lobbyName = $('create-lobby-name').value;
-    const code = $('create-code').value;
+    const isPublic = $('create-public').checked;
     if (!name || !lobbyName) {
         log("Error: User Name and Lobby Name are required", 'error');
         return;
     }
-    log(`Reducer: createLobby("${name}", "${lobbyName}", "${code}")`);
-    store.createLobby(name, lobbyName, code);
+    log(`Reducer: createLobby("${name}", "${lobbyName}", isPublic=${isPublic})`);
+    store.createLobby(name, lobbyName, isPublic);
 });
 
 $('btn-join').addEventListener('click', () => {

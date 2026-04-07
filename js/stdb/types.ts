@@ -14,6 +14,7 @@ export const Lobby = __t.object("Lobby", {
   lobbyCode: __t.string(),
   lobbyName: __t.string(),
   ownerId: __t.identity(),
+  isPublic: __t.bool(),
 });
 export type Lobby = __Infer<typeof Lobby>;
 

@@ -293,6 +293,16 @@
                 <label class="field-label" for="create-lobby-name">Lobby Name</label>
                 <input type="text" id="create-lobby-name" placeholder="e.g., Friday Night Game..." autocomplete="off">
             </div>
+            <div class="field-group" style="display: flex; align-items: center; justify-content: space-between; margin-top: 20px; padding: 12px; background: rgba(0,0,0,0.03); border-radius: 12px;">
+                <div style="display: flex; flex-direction: column;">
+                    <label class="field-label" style="margin-bottom: 2px;">Private Lobby</label>
+                    <span style="font-size: 11px; color: var(--md-on-surface-dim);">Hidden from public browser</span>
+                </div>
+                <label class="toggle-switch" title="Toggle Private Mode">
+                    <input type="checkbox" id="create-private-toggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
             <div class="modal-controls" style="margin-top:24px;">
                 <button id="create-confirm-btn" class="success primary">
                     <span class="material-icons">check</span>
@@ -352,10 +362,15 @@
             <span class="close-btn" id="close-settings-modal-btn" role="button" aria-label="Close">&#xD7;</span>
             <h2>Network Settings</h2>
             <div class="field-group" style="text-align: left; margin-top: 16px;">
-                <label class="field-label" for="server-uri">SpacetimeDB Server URI</label>
+                <label class="field-label">Quick Select Server</label>
+                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                    <button id="server-local-btn" class="outlined" style="flex: 1; padding: 8px; font-size: 11px;">Localhost</button>
+                    <button id="server-maincloud-btn" class="outlined" style="flex: 1; padding: 8px; font-size: 11px;">Maincloud</button>
+                </div>
+                <label class="field-label" for="server-uri">Manual Server URI</label>
                 <input type="text" id="server-uri" placeholder="ws://localhost:3000" value="ws://localhost:3000">
                 <p style="font-size: 11px; color: var(--md-on-surface-dim); margin-top: 8px;">
-                    Change this if you are using a custom or public SpacetimeDB node.
+                    Change this to connect to a different SpacetimeDB node.
                 </p>
             </div>
             <div class="modal-controls" style="margin-top:24px;">

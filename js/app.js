@@ -251,6 +251,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 })
                 .onConnectError((_ctx, err) => {
                     Logger.error(`SpacetimeDB Connection Error: ${err}`);
+                    if (err && (err.toString().includes("Unauthorized") || err.toString().includes("Failed to verify token"))) {
+                        Logger.warn("Identity token rejected. Clearing local token to allow re-authentication...");
+                        localStorage.removeItem('stdb_identity_token');
+                    }
                 })
                 .build();
         };
@@ -316,7 +320,8 @@ document.addEventListener("DOMContentLoaded", () => {
         createConfirmBtn?.addEventListener("click", () => {
             const name = createOwnerNameInput.value.trim();
             const lobbyName = createLobbyNameInput?.value.trim();
-            console.log(`Create Lobby Confirm clicked: Name="${name}", LobbyName="${lobbyName}"`);
+            const isPrivate = document.getElementById("create-private-toggle")?.checked || false;
+            console.log(`Create Lobby Confirm clicked: Name="${name}", LobbyName="${lobbyName}", Private=${isPrivate}`);
 
             if (!name || !lobbyName) {
                 Logger.error("Both player name and lobby name are required.");
@@ -325,8 +330,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             setPlayMode("multiplayer");
             if (currentStore instanceof SpacetimeDBStore) {
-                Logger.info(`Creating lobby: ${lobbyName} as ${name}`);
-                currentStore.createLobby(name, lobbyName);
+                Logger.info(`Creating lobby: ${lobbyName} as ${name} (Private: ${isPrivate})`);
+                currentStore.createLobby(name, lobbyName, !isPrivate);
                 createLobbyModal?.classList.remove("active");
             }
         });
@@ -361,12 +366,23 @@ document.addEventListener("DOMContentLoaded", () => {
             const uri = serverUriInput.value.trim();
             if (uri) {
                 localStorage.setItem("stdb_server_uri", uri);
+                localStorage.removeItem("stdb_identity_token"); // Clear token as it is node-specific
                 settingsModal?.classList.remove("active");
                 Logger.info(`Server URI updated to ${uri}. Please refresh to apply.`);
                 if (confirm("Server settings changed. Refresh now to apply?")) {
                     window.location.reload();
                 }
             }
+        });
+
+        // Quick Select Server Handlers
+        document.getElementById("server-local-btn")?.addEventListener("click", () => {
+            serverUriInput.value = "ws://localhost:3000";
+            Logger.info("Server URI set to Localhost.");
+        });
+        document.getElementById("server-maincloud-btn")?.addEventListener("click", () => {
+            serverUriInput.value = "wss://maincloud.spacetimedb.com";
+            Logger.info("Server URI set to Maincloud.");
         });
 
         // Close buttons for new modals
@@ -465,17 +481,10 @@ document.addEventListener("DOMContentLoaded", () => {
                         joinNameInput.focus();
                         return;
                     }
-                    const code = prompt(`Enter secret code for '${lobby.name}':`, "");
-                    if (code) {
-                        const uppercasedCode = code.toUpperCase();
-                        console.log(`Lobby Connect proceeding: Name="${userName}", Code="${uppercasedCode}"`);
-                        if (currentStore.joinLobby(userName, code)) {
-                            showView('game');
-                        }
-                        joinLobbyModal?.classList.remove("active");
-                    } else {
-                        console.log("Lobby Connect cancelled by user (no code entered).");
-                    }
+                    
+                    console.log(`Lobby Connect proceeding: Name="${userName}", Code="${lobby.code}"`);
+                    currentStore.joinLobby(userName, lobby.code);
+                    joinLobbyModal?.classList.remove("active");
                 });
 
                 lobbyListEl.appendChild(item);

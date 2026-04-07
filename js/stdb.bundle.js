@@ -7826,7 +7826,7 @@ function procedures(...args) {
 var create_lobby_reducer_default = {
   userName: t.string(),
   lobbyName: t.string(),
-  codeArg: t.string()
+  isPublic: t.bool()
 };
 
 // js/stdb/delete_lobby_reducer.ts
@@ -7860,7 +7860,8 @@ var update_user_name_reducer_default = {
 var lobby_table_default = t.row({
   lobbyCode: t.string().primaryKey().name("lobby_code"),
   lobbyName: t.string().name("lobby_name"),
-  ownerId: t.identity().name("owner_id")
+  ownerId: t.identity().name("owner_id"),
+  isPublic: t.bool().name("is_public")
 });
 
 // js/stdb/player_table.ts

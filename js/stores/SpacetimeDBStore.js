@@ -66,6 +66,7 @@ export class SpacetimeDBStore extends GameStore {
         const info = {
             code: lobby.lobbyCode,
             name: lobby.lobbyName,
+            isPublic: lobby.isPublic,
             ownerId: typeof lobby.ownerId === 'string' ? lobby.ownerId : lobby.ownerId.toHexString(),
             isOwner: (typeof lobby.ownerId === 'string' ? lobby.ownerId : lobby.ownerId.toHexString()) ===
                 (typeof this.identity === 'string' ? this.identity : this.identity.toHexString())
@@ -82,13 +83,15 @@ export class SpacetimeDBStore extends GameStore {
             return [];
         }
 
-        const lobbies = Array.from(this.conn.db.lobby.iter()).map(lobby => {
-            return {
-                code: lobby.lobbyCode,
-                name: lobby.lobbyName,
-                playerCount: this.getPlayersInLobby(lobby.lobbyCode).length
-            };
-        });
+        const lobbies = Array.from(this.conn.db.lobby.iter())
+            .filter(lobby => lobby.isPublic === true)
+            .map(lobby => {
+                return {
+                    code: lobby.lobbyCode,
+                    name: lobby.lobbyName,
+                    playerCount: this.getPlayersInLobby(lobby.lobbyCode).length
+                };
+            });
 
         console.log(`SpacetimeDB Store: getAvailableLobbies found ${lobbies.length} lobbies`);
         return lobbies;
@@ -131,7 +134,7 @@ export class SpacetimeDBStore extends GameStore {
 
     /** Lobby Reducers */
 
-    createLobby(userName, lobbyName, code = "") {
+    createLobby(userName, lobbyName, isPublic = true) {
         if (!userName || userName.trim() === "") {
             console.error("SpacetimeDB: Cannot create lobby without a user name");
             return;
@@ -143,14 +146,13 @@ export class SpacetimeDBStore extends GameStore {
 
         const cleanUserName = userName.trim();
         const cleanLobbyName = lobbyName.trim();
-        const cleanCode = typeof code === 'string' ? code.trim() : "";
 
-        console.log(`SpacetimeDB: Creating lobby. User: "${cleanUserName}", Lobby Name: "${cleanLobbyName}", Code (if set): "${cleanCode}"`);
+        console.log(`SpacetimeDB: Creating lobby. User: "${cleanUserName}", Lobby Name: "${cleanLobbyName}", Public: ${isPublic}`);
 
         this.conn.reducers.createLobby({
             userName: cleanUserName,
             lobbyName: cleanLobbyName,
-            codeArg: cleanCode
+            isPublic: isPublic
         });
     }
 
