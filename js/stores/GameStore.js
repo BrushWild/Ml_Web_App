@@ -12,9 +12,23 @@ export class GameStore {
         this.onUpdateCallbacks.push(callback);
     }
 
-    /** Notify all listeners that the state has changed */
+    /** Notify all listeners that the state has changed.
+     * Coalesced to at most one delivery per animation frame so a burst of
+     * table events (e.g. rapid score updates) triggers a single re-render
+     * instead of one per event. */
     notify() {
-        this.onUpdateCallbacks.forEach(cb => cb(this.getPlayers()));
+        if (this.__notifyScheduled) return;
+        this.__notifyScheduled = true;
+        const schedule = () => {
+            this.__notifyScheduled = false;
+            const players = this.getPlayers();
+            this.onUpdateCallbacks.forEach(cb => cb(players));
+        };
+        if (typeof requestAnimationFrame === 'function') {
+            requestAnimationFrame(schedule);
+        } else {
+            setTimeout(schedule, 0);
+        }
     }
 
     /** Get the current list of players */

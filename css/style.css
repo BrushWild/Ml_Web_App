@@ -781,9 +781,15 @@ li .player-rank {
     background: rgba(0, 0, 0, .45);
     justify-content: center;
     align-items: center;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
     animation: backdrop-in .2s var(--ease-md);
+}
+
+/* Backdrop blur is GPU-expensive on mobile; keep it for large screens only. */
+@media (min-width: 1024px) {
+    .modal {
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+    }
 }
 
 @keyframes backdrop-in {
