@@ -526,6 +526,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const renderLobbyList = () => {
             if (!lobbyListEl) return;
+            // The lobby list is only visible inside the join-lobby modal, so
+            // skip the (relatively expensive) discovery + rebuild on every
+            // DB tick while the modal is closed.
+            if (!joinLobbyModal?.classList.contains("active")) return;
 
             // Use background store for discovery even in Local mode
             const discoveryStore = (currentStore instanceof SpacetimeDBStore) ? currentStore : multiplayerStore;
@@ -583,9 +587,85 @@ document.addEventListener("DOMContentLoaded", () => {
         };
 
         // === Player Management ===
+        // Per-row element references so update renders can mutate existing
+        // rows in place instead of tearing down and rebuilding the list.
+        const playerRowRefs = new Map(); // playerId -> row element refs
+
+        const makePlayerLi = (player) => {
+            const li = document.createElement("li");
+            li.innerHTML = `
+                <div class="player-rank"></div>
+                <div class="player-info">
+                    <span class="player-name"></span>
+                    <div class="player-score-container">
+                        <span class="player-score-large"></span>
+                        <span class="player-score-pts">pts</span>
+                    </div>
+                </div>
+                <div class="player-actions"></div>
+            `;
+            const actions = li.querySelector(".player-actions");
+            const captureBtn = document.createElement("button");
+            captureBtn.className = "icon-btn camera-btn";
+            captureBtn.innerHTML = '<span class="material-icons">photo_camera</span>';
+            const settingsBtn = document.createElement("button");
+            settingsBtn.className = "icon-btn";
+            settingsBtn.innerHTML = '<span class="material-icons">settings</span>';
+            actions.appendChild(captureBtn);
+            actions.appendChild(settingsBtn);
+            return {
+                li,
+                rankEl: li.querySelector(".player-rank"),
+                nameEl: li.querySelector(".player-name"),
+                scoreEl: li.querySelector(".player-score-large"),
+                captureBtn,
+                settingsBtn
+            };
+        };
+
+        const updatePlayerLi = (ref, player, index) => {
+            const isOffline = playMode === 'multiplayer' && player.isOnline === false;
+            ref.li.classList.toggle("disconnected", isOffline);
+            ref.rankEl.textContent = index + 1;
+            ref.nameEl.innerHTML = `${player.name}${player.isSelf ? ' <small>(You)</small>' : ''}` +
+                `${isOffline ? ' <span class="material-icons offline-icon" title="Player Disconnected">cloud_off</span>' : ''}`;
+            ref.scoreEl.textContent = player.score;
+
+            const canEdit = playMode === 'local' || player.canEdit;
+            const locked = isNetworkLocked && playMode === 'multiplayer';
+            if (locked) {
+                ref.captureBtn.disabled = true;
+                ref.captureBtn.classList.add("disabled");
+                ref.captureBtn.title = "Network Disconnected";
+                ref.captureBtn.onclick = null;
+            } else if (!canEdit) {
+                ref.captureBtn.disabled = false;
+                ref.captureBtn.classList.remove("disabled");
+                ref.captureBtn.classList.add("disabled-action");
+                ref.captureBtn.title = "No Permission";
+                ref.captureBtn.onclick = null;
+            } else {
+                ref.captureBtn.disabled = false;
+                ref.captureBtn.classList.remove("disabled", "disabled-action");
+                ref.captureBtn.title = "Capture Score";
+                ref.captureBtn.onclick = () => openCameraModal(player.id);
+            }
+
+            if (!canEdit) {
+                ref.settingsBtn.classList.add("disabled-action");
+                ref.settingsBtn.title = "No Permission";
+                ref.settingsBtn.onclick = null;
+            } else {
+                ref.settingsBtn.classList.remove("disabled-action");
+                ref.settingsBtn.title = "Edit Player";
+                ref.settingsBtn.onclick = () => {
+                    document.dispatchEvent(new CustomEvent('openEditPlayer', { detail: { id: player.id } }));
+                };
+            }
+        };
+
         const renderPlayers = (players) => {
             if (!players) players = currentStore.getPlayers();
-            playerListEl.innerHTML = "";
 
             // Update Lobby Code if in multiplayer
             if (displayLobbyCode) {
@@ -597,66 +677,37 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (sortedPlayers.length === 0) {
                 playerListEl.innerHTML = "<li style='justify-content:center; color:#666'>No players added yet.</li>";
+                playerRowRefs.clear();
                 return;
             }
 
+            // Clear the "no players" placeholder if present
+            const first = playerListEl.firstElementChild;
+            if (first && first.hasAttribute && first.hasAttribute("style")) {
+                playerListEl.innerHTML = "";
+            }
+
+            const seen = new Set();
             sortedPlayers.forEach((player, index) => {
-                const li = document.createElement("li");
-                const isOffline = playMode === 'multiplayer' && player.isOnline === false;
-                if (isOffline) li.classList.add("disconnected");
-
-                li.innerHTML = `
-                    <div class="player-rank">${index + 1}</div>
-                    <div class="player-info">
-                        <span class="player-name">
-                            ${player.name}${player.isSelf ? ' <small>(You)</small>' : ''}
-                            ${isOffline ? ' <span class="material-icons offline-icon" title="Player Disconnected">cloud_off</span>' : ''}
-                        </span>
-                        <div class="player-score-container">
-                            <span class="player-score-large">${player.score}</span>
-                            <span class="player-score-pts">pts</span>
-                        </div>
-                    </div>
-                    <div class="player-actions"></div>
-                `;
-
-                const actionsContainer = li.querySelector(".player-actions");
-                const captureBtn = document.createElement("button");
-                captureBtn.className = "icon-btn camera-btn";
-
-                const canEdit = playMode === 'local' || player.canEdit;
-
-                if (isNetworkLocked && playMode === 'multiplayer') {
-                    captureBtn.disabled = true;
-                    captureBtn.classList.add("disabled");
-                    captureBtn.title = "Network Disconnected";
-                } else if (!canEdit) {
-                    captureBtn.classList.add("disabled-action");
-                    captureBtn.title = "No Permission";
-                } else {
-                    captureBtn.title = "Capture Score";
-                    captureBtn.onclick = () => openCameraModal(player.id);
+                seen.add(player.id);
+                let ref = playerRowRefs.get(player.id);
+                if (!ref) {
+                    ref = makePlayerLi(player);
+                    playerRowRefs.set(player.id, ref);
                 }
-                captureBtn.innerHTML = '<span class="material-icons">photo_camera</span>';
-
-                const settingsBtn = document.createElement("button");
-                settingsBtn.className = "icon-btn";
-
-                if (!canEdit) {
-                    settingsBtn.classList.add("disabled-action");
-                    settingsBtn.title = "No Permission";
-                } else {
-                    settingsBtn.title = "Edit Player";
-                    settingsBtn.onclick = () => {
-                        document.dispatchEvent(new CustomEvent('openEditPlayer', { detail: { id: player.id } }));
-                    };
-                }
-                settingsBtn.innerHTML = '<span class="material-icons">settings</span>';
-
-                actionsContainer.appendChild(captureBtn);
-                actionsContainer.appendChild(settingsBtn);
-                playerListEl.appendChild(li);
+                updatePlayerLi(ref, player, index);
+                // appendChild on an existing node is a cheap DOM move; this
+                // keeps DOM order in sync with rank order on score changes.
+                playerListEl.appendChild(ref.li);
             });
+
+            // Remove rows for players that left
+            for (const [id, ref] of playerRowRefs) {
+                if (!seen.has(id)) {
+                    ref.li.remove();
+                    playerRowRefs.delete(id);
+                }
+            }
         };
 
         const addPlayer = (name, startScore = 0) => {
@@ -759,12 +810,21 @@ document.addEventListener("DOMContentLoaded", () => {
             statusMessageEl.textContent = "Starting camera...";
             cameraModal.classList.add("active");
 
+            // If the modal is closed before getUserMedia resolves, stop the
+            // stream so we don't hold the camera for a hidden modal.
+            let stream = null;
             try {
-                currentVideoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-                webcamEl.srcObject = currentVideoStream;
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                if (!cameraModal.classList.contains("active")) {
+                    stream.getTracks().forEach(track => track.stop());
+                    return;
+                }
+                currentVideoStream = stream;
+                webcamEl.srcObject = stream;
                 statusMessageEl.textContent = "Camera ready.";
             } catch (err) {
                 Logger.error(`Camera error: ${err.message}`);
+                if (stream) stream.getTracks().forEach(track => track.stop());
                 statusMessageEl.textContent = "Error accessing camera.";
             }
         };
