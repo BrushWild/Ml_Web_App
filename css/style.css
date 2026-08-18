@@ -379,8 +379,15 @@ input[type="number"]:focus {
     box-shadow: 0 0 0 3px var(--md-primary-lighter);
 }
 
-/* Full-width inputs inside the modal fields — prevent vertical stretch in column flex */
-.add-player-fields input {
+/* Full-width, fixed-height inputs for every modal form field.
+   Scoped to .field-group (not just .add-player-fields) so that the
+   create-lobby and join-code fields — which live in plain .field-group
+   containers — get the same 44px height as the add/edit player fields.
+   The `flex: 0 0 auto` override is what stops the generic
+   input[type="text"] `flex: 1 1 180px` basis from ballooning the
+   height to 180px inside vertical field groups. */
+.field-group input[type="text"],
+.field-group input[type="number"] {
     width: 100%;
     flex: 0 0 auto;
     /* don't grow along the column axis */
