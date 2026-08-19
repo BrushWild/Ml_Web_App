@@ -85,6 +85,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const joinCodeInput = document.getElementById("join-code");
         const lobbyListEl = document.getElementById("lobby-list");
         const serverSelect = document.getElementById("server-select");
+        const returnLocalBtn = document.getElementById("return-local-btn");
         const activeServerNameEl = document.getElementById("active-server-name");
         const activeServerBadge = document.getElementById("active-server-badge");
         const closeSettingsBtn = document.getElementById("close-settings-btn");
@@ -97,10 +98,18 @@ document.addEventListener("DOMContentLoaded", () => {
         let currentVideoStream = null;
         let currentScore = 0;
         let isNetworkLocked = false;
-        let reconnectTimeout = null;
         let connectionAttemptTimeout = null;
         let lastSuccessfulUri = localStorage.getItem('stdb_server_uri');
         let currentWaterfallIndex = 0;
+
+        // === Reconnection State ===
+        let reconnectTimer = null;        // pending setTimeout handle (single-flight guard)
+        let reconnectAttempt = 0;         // attempt counter, drives backoff
+        let userOptedOutReconnect = false; // true after "Return to Local Mode"
+        let connGeneration = 0;           // increments per built connection; stale-callback guard
+        const RECONNECT_BASE_MS = 1000;        // initial backoff delay
+        const RECONNECT_MAX_INTERVAL_MS = 15000; // cap per-attempt delay
+        const RECONNECT_SHOW_FALLBACK_AT = 3;   // reveal "Return to Local Mode" after this many attempts
 
         // === SpacetimeDB State ===
         let stdbConn = null;
@@ -202,14 +211,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const setNetworkLock = (locked) => {
             isNetworkLocked = locked;
-            const overlay = document.getElementById("reconnecting-overlay");
+            const overlay = document.getElementById("reconnecting-modal");
+            const fallbackWrapper = document.getElementById("reconnect-timer-wrapper");
             if (locked) {
                 overlay?.classList.add("active");
+                document.body.classList.add("network-locked");
+                if (reconnectAttempt >= RECONNECT_SHOW_FALLBACK_AT) {
+                    fallbackWrapper?.classList.remove("hidden");
+                }
                 if (cameraModal?.classList.contains("active")) {
                     statusMessageEl.textContent = "Network lost. Waiting for reconnection...";
                 }
             } else {
                 overlay?.classList.remove("active");
+                document.body.classList.remove("network-locked");
+                fallbackWrapper?.classList.add("hidden");
                 if (cameraModal?.classList.contains("active")) {
                     statusMessageEl.textContent = "Network restored. Camera ready.";
                 }
@@ -230,52 +246,92 @@ document.addEventListener("DOMContentLoaded", () => {
             if (serverSelect) serverSelect.value = uri;
         };
 
-        const initSpacetime = (preferredUri = null) => {
-            const uri = preferredUri || localStorage.getItem('stdb_server_uri') || SERVERS[0].uri;
-            const token = localStorage.getItem('stdb_identity_token');
+        const autoRestoreSession = () => {
+            if (!multiplayerStore || playMode === 'multiplayer') return;
+            const lobbyInfo = multiplayerStore.getLobbyInfo();
+            if (lobbyInfo) {
+                Logger.info(`Auto-restoring session: lobby ${lobbyInfo.code}`);
+                playMode = 'multiplayer';
+                currentStore = multiplayerStore;
+                window.gameStore = currentStore;
+                showView('game');
+                renderPlayers();
+            }
+        };
 
+        // Schedules the next reconnect attempt with exponential backoff: attempt #1 waits
+        // 1s, #2 waits 2s, #3 waits 4s, #4 waits 8s, then it plateaus at 15s. Single-flight:
+        // a pending timer is always cleared first so attempts never stack.
+        const scheduleReconnect = (uri) => {
+            if (reconnectTimer) {
+                clearTimeout(reconnectTimer);
+                reconnectTimer = null;
+            }
+            const attemptNumber = reconnectAttempt + 1;
+            const delay = Math.min(RECONNECT_BASE_MS * Math.pow(2, attemptNumber - 1), RECONNECT_MAX_INTERVAL_MS);
+            reconnectAttempt = attemptNumber;
+            Logger.info(`SpacetimeDB: reconnecting in ${Math.round(delay / 1000)}s (attempt ${reconnectAttempt}).`);
+            if (reconnectAttempt >= RECONNECT_SHOW_FALLBACK_AT) {
+                setNetworkLock(true); // reveal "Return to Local Mode" fallback
+            }
+            reconnectTimer = setTimeout(() => {
+                reconnectTimer = null;
+                if (userOptedOutReconnect) return; // user bailed out while waiting
+                const token = localStorage.getItem('stdb_identity_token');
+                connectToDb(uri, token, true);
+            }, delay);
+        };
+
+        // Extracted connection factory: builds a fresh DbConnection from a URI and
+        // (optional) identity token. The SDK opens the WS in the constructor and has no
+        // `connect()` method, so reconnection always means building a brand-new
+        // connection. `connGeneration` guards against stale callbacks from a previous
+        // connection whose WS close fires after we've already moved on.
+        const connectToDb = (uri, token, isReconnect) => {
+            const gen = ++connGeneration;
+            const selfGen = () => gen === connGeneration;
+
+            // Connection-attempt watchdog. On the first connect we keep the existing
+            // 5s waterfall (try the next server if this one is dead). On a reconnect we
+            // only ever retry the last-known-good server, so a longer watchdog that just
+            // logs avoids spuriously advancing the server waterfall while the network is
+            // down.
             if (connectionAttemptTimeout) clearTimeout(connectionAttemptTimeout);
-            if (stdbConn) stdbConn.disconnect();
+            connectionAttemptTimeout = setTimeout(() => {
+                if (!selfGen()) return;
+                Logger.warn(`Connection to ${uri} still pending after watchdog.`);
+                if (!isReconnect) handleConnectionFailure(uri);
+            }, isReconnect ? 30000 : 5000);
 
             updateActiveServerUI(uri, "Connecting...");
-            console.log(`initSpacetime: connecting to ${uri}...`);
-
-            // 5 second timeout for the Waterfall
-            connectionAttemptTimeout = setTimeout(() => {
-                Logger.warn(`Connection to ${uri} timed out after 5s.`);
-                handleConnectionFailure(uri);
-            }, 5000);
+            console.log(`connectToDb: connecting to ${uri} (reconnect=${isReconnect})...`);
 
             stdb.DbConnection.builder()
                 .withUri(uri)
                 .withDatabaseName('domino-vision')
                 .withToken(token)
-                .onConnect((conn, identity, token) => {
+                .onConnect((conn, identity, newToken) => {
+                    if (!selfGen()) return; // a newer connection superseded this one
                     if (connectionAttemptTimeout) clearTimeout(connectionAttemptTimeout);
                     console.log("SpacetimeDB Connected successfully");
                     stdbConn = conn;
                     stdbIdentity = identity;
                     lastSuccessfulUri = uri;
                     localStorage.setItem('stdb_server_uri', uri);
-                    localStorage.setItem('stdb_identity_token', token);
+                    if (newToken) localStorage.setItem('stdb_identity_token', newToken);
+
+                    // Reset reconnect backoff now that we're healthy.
+                    if (isReconnect) {
+                        reconnectAttempt = 0;
+                        userOptedOutReconnect = false;
+                        Logger.info("SpacetimeDB reconnected successfully.");
+                    }
 
                     multiplayerStore = new SpacetimeDBStore(stdbConn, stdbIdentity);
                     multiplayerStore.onUpdate(() => {
-                        // Regular UI update
                         if (playMode === 'multiplayer') renderPlayers();
                         renderLobbyList();
-
-                        // Secondary Auto-Restore Check: If data arrives after onApplied
-                        if (playMode !== 'multiplayer') {
-                            const lobbyInfo = multiplayerStore.getLobbyInfo();
-                            if (lobbyInfo) {
-                                Logger.info(`Auto-restoring session from onUpdate for lobby: ${lobbyInfo.code}`);
-                                playMode = 'multiplayer';
-                                currentStore = multiplayerStore;
-                                window.gameStore = currentStore;
-                                showView('game');
-                            }
-                        }
+                        autoRestoreSession();
                     });
 
                     updateActiveServerUI(uri, "Connected");
@@ -284,19 +340,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         stdbConn.subscriptionBuilder()
                             .onApplied(() => {
                                 Logger.info("SpacetimeDB Subscribed: onApplied fired.");
-                                
-                                // Auto-Restore Session: Attempt check
-                                const lobbyInfo = multiplayerStore.getLobbyInfo();
-                                if (lobbyInfo && playMode !== 'multiplayer') {
-                                    Logger.info(`Auto-restoring session from onApplied for lobby: ${lobbyInfo.code}`);
-                                    playMode = 'multiplayer';
-                                    currentStore = multiplayerStore;
-                                    window.gameStore = currentStore;
-                                    showView('game');
-                                } else {
-                                    Logger.info("onApplied: Auto-restore check skipped (no lobby found yet).");
-                                }
-
+                                autoRestoreSession();
                                 renderPlayers();
                                 renderLobbyList();
                             })
@@ -317,25 +361,55 @@ document.addEventListener("DOMContentLoaded", () => {
                     Logger.info(`Connected to ${SERVERS.find(s => s.uri === uri)?.name || uri}`);
                 })
                 .onDisconnect(() => {
+                    if (!selfGen()) return; // stale WS close from a superseded connection
                     Logger.error("SpacetimeDB disconnected.");
+                    if (connectionAttemptTimeout) clearTimeout(connectionAttemptTimeout);
+                    if (stdbConn === null) return; // we already tore it down (manual switch)
                     stdbConn = null;
+                    multiplayerStore = null;
+                    window.gameStore = null;
                     updateActiveServerUI(uri, "Disconnected");
                     if (playMode === 'multiplayer') setNetworkLock(true);
+                    if (playMode === 'multiplayer' && !userOptedOutReconnect) {
+                        scheduleReconnect(uri);
+                    }
                 })
                 .onConnectError((_ctx, err) => {
+                    if (!selfGen()) return;
                     if (connectionAttemptTimeout) clearTimeout(connectionAttemptTimeout);
                     Logger.error(`SpacetimeDB Connection Error: ${err}`);
 
                     if (err && (err.toString().includes("Unauthorized") || err.toString().includes("Failed to verify token"))) {
-                        Logger.warn("Identity token rejected. Clearing local token...");
+                        Logger.warn("Identity token rejected. Clearing local token and retrying...");
                         localStorage.removeItem('stdb_identity_token');
-                        // Try same URI again without token
-                        initSpacetime(uri);
+                        reconnectAttempt = 0;
+                        connectToDb(uri, null, isReconnect);
+                    } else if (isReconnect) {
+                        // Keep retrying the same server; scheduleReconnect advances backoff.
+                        scheduleReconnect(uri);
                     } else {
                         handleConnectionFailure(uri);
                     }
                 })
                 .build();
+        };
+
+        // Entry point used by init and by manual server switches.
+        const initSpacetime = (preferredUri = null) => {
+            const uri = preferredUri || lastSuccessfulUri || localStorage.getItem('stdb_server_uri') || SERVERS[0].uri;
+            const token = localStorage.getItem('stdb_identity_token');
+            // Tear down the previous connection before building a new one. Nulling
+            // stdbConn first suppresses the stale onDisconnect the WS close will emit.
+            if (connectionAttemptTimeout) clearTimeout(connectionAttemptTimeout);
+            if (stdbConn) {
+                const old = stdbConn;
+                stdbConn = null;
+                multiplayerStore = null;
+                try { old.disconnect(); } catch (e) { /* already closed */ }
+            }
+            reconnectAttempt = 0;
+            userOptedOutReconnect = false;
+            connectToDb(uri, token, false);
         };
 
         const handleConnectionFailure = (failedUri) => {
@@ -523,6 +597,47 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Try to connect, but don't block app startup
         initSpacetime();
+
+        // "Return to Local Mode" — user gave up on reconnecting. Stop the backoff loop
+        // and drop to the offline store; the connection itself is left alone so the
+        // player's seat in the lobby is retained on the server (isOnline=false) until
+        // they rejoin.
+        returnLocalBtn?.addEventListener("click", () => {
+            Logger.info("User returned to Local Mode from reconnect fallback.");
+            if (reconnectTimer) {
+                clearTimeout(reconnectTimer);
+                reconnectTimer = null;
+            }
+            userOptedOutReconnect = true;
+            setPlayMode("local");
+            setNetworkLock(false);
+            showView("home");
+        });
+
+        // === Browser Network Listeners ===
+        // The WebSocket is the only signal that a network drop reaches the DB layer,
+        // which can take up to the server's idle timeout. Browsers also expose
+        // navigator.onLine / online / offline, so use them to trigger a fast reconnect
+        // (and to stop hammering when the network is genuinely down).
+        window.addEventListener("online", () => {
+            Logger.info("Browser reports network is back online.");
+            // Only nudge if we're actually disconnected AND no backoff attempt is already
+            // pending. If reconnectAttempt is non-zero a backoff timer may still be armed;
+            // if stdbConn is null and the timer already fired we're between attempts.
+            if (playMode === 'multiplayer' && !stdbConn && reconnectAttempt === 0) {
+                userOptedOutReconnect = false;
+                const token = localStorage.getItem('stdb_identity_token');
+                const uri = lastSuccessfulUri || localStorage.getItem('stdb_server_uri') || SERVERS[0].uri;
+                connectToDb(uri, token, true);
+            }
+        });
+        window.addEventListener("offline", () => {
+            Logger.info("Browser reports network is offline.");
+            if (playMode === 'multiplayer' && stdbConn) {
+                // Surface the lock immediately rather than waiting for the WS to notice.
+                setNetworkLock(true);
+            }
+        });
 
         const renderLobbyList = () => {
             if (!lobbyListEl) return;

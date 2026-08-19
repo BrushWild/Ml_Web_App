@@ -132,7 +132,7 @@ export class SpacetimeDBStore extends GameStore {
                 score: p.score,
                 clientId: playerIdentityHex,
                 isSelf: isSelf,
-                isOnline: p.is_online,
+                isOnline: p.isOnline,
                 canEdit: isSelf || isOwner
             };
         }).sort((a, b) => b.score - a.score);
