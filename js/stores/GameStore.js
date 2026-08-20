@@ -41,7 +41,16 @@ export class GameStore {
         throw new Error("addPlayer() not implemented");
     }
 
-    /** Update a player's score by adding a given amount */
+    /**
+     * Shared score arithmetic: the score committed to a player's record is
+     * always their current score plus `amount`. Both store backends route
+     * through this so local and online scoring can never drift apart.
+     */
+    addScore(currentScore, amount) {
+        return (Number(currentScore) || 0) + amount;
+    }
+
+    /** Update a player's score by adding a given amount (additive, not replacement) */
     updateScore(playerId, amount) {
         throw new Error("updateScore() not implemented");
     }

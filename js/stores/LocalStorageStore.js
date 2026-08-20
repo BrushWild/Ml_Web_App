@@ -36,7 +36,16 @@ export class LocalStorageStore extends GameStore {
     updateScore(playerId, amount) {
         const player = this.players.find(p => p.id === playerId);
         if (player) {
-            player.score += amount;
+            player.score = this.addScore(player.score, amount);
+            this.saveAndNotify();
+        }
+    }
+
+    /** Absolute set: commit exactly `absoluteScore` to the player's record */
+    setScore(playerId, absoluteScore) {
+        const player = this.players.find(p => p.id === playerId);
+        if (player) {
+            player.score = absoluteScore;
             this.saveAndNotify();
         }
     }

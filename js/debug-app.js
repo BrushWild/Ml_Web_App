@@ -204,8 +204,8 @@ function render() {
             });
             document.getElementById(`score-btn-${p.id}`).addEventListener('click', () => {
                 const score = parseInt(document.getElementById(`score-input-${p.id}`).value);
-                log(`Reducer: updateScore for player ${p.id} -> ${score}`);
-                store.updateScore(p.id, score);
+                log(`Reducer: setScore for player ${p.id} -> ${score}`);
+                store.setScore(p.id, score);
             });
             document.getElementById(`remove-btn-${p.id}`).addEventListener('click', () => {
                 if (confirm(`Reducer: removePlayer ${p.id}?`)) {

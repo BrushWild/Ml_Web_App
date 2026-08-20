@@ -225,12 +225,20 @@ export class SpacetimeDBStore extends GameStore {
         });
     }
 
+    /** Additive: commit the player's current score + amount (shared addScore math) */
     updateScore(playerId, amount) {
-        console.log(`SpacetimeDB: Updating score for player ${playerId} to ${amount}`);
+        const player = this.getPlayers().find(p => p.id === playerId);
+        const newScore = this.addScore(player ? player.score : 0, amount);
+        this.setScore(playerId, newScore);
+    }
+
+    /** Absolute set: commit exactly `absoluteScore` to the player's record */
+    setScore(playerId, absoluteScore) {
+        console.log(`SpacetimeDB: Setting score for player ${playerId} to ${absoluteScore}`);
         // FIXED: Passing arguments as a single named object
         this.conn.reducers.updateScore({
             playerId: BigInt(playerId),
-            newScore: amount
+            newScore: absoluteScore
         });
     }
 
@@ -254,13 +262,13 @@ export class SpacetimeDBStore extends GameStore {
             console.warn("SpacetimeDB: renamePlayer reducer not available in bindings yet. Falling back to targeted score only.");
         }
 
-        this.updateScore(playerId, score);
+        this.setScore(playerId, score);
     }
 
     resetScores() {
         const players = this.getPlayers();
         players.forEach(p => {
-            this.updateScore(p.id, 0); // Reset to 0
+            this.setScore(p.id, 0); // Reset to 0
         });
     }
 

@@ -2,8 +2,8 @@ console.log("app.js: Script loading started");
 import { Logger } from './logger.js';
 import { processImageForScore, processImageForScoreTwoPass } from './vision.js';
 import * as stdb from './stdb.bundle.js';
-import { LocalStorageStore } from './stores/LocalStorageStore.js';
-import { SpacetimeDBStore } from './stores/SpacetimeDBStore.js';
+import { LocalStorageStore } from './stores/LocalStorageStore.js?v=2';
+import { SpacetimeDBStore } from './stores/SpacetimeDBStore.js?v=2';
 const SERVERS = [
     { name: "Spacetime Maincloud", uri: "wss://maincloud.spacetimedb.com" },
     { name: "Self Hosted", uri: "wss://dominohost.brushplusplus.com" },
