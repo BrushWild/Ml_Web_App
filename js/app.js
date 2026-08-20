@@ -558,6 +558,24 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("close-settings-modal-btn")?.addEventListener("click", () => settingsModal?.classList.remove("active"));
         closeSettingsBtn?.addEventListener("click", () => settingsModal?.classList.remove("active"));
 
+        // Create/Join lobby modal close buttons (X in top-right corner)
+        function closeLobbyModal(modal) {
+            if (!modal) return;
+            modal.classList.add("closing");
+            setTimeout(() => modal.classList.remove("active", "closing"), 200);
+        }
+        document.getElementById("close-create-modal-btn")?.addEventListener("click", () => closeLobbyModal(createLobbyModal));
+        document.getElementById("close-join-modal-btn")?.addEventListener("click", () => closeLobbyModal(joinLobbyModal));
+        // Also close on backdrop click or Escape, matching the other modals
+        createLobbyModal?.addEventListener("click", (e) => { if (e.target === createLobbyModal) closeLobbyModal(createLobbyModal); });
+        joinLobbyModal?.addEventListener("click", (e) => { if (e.target === joinLobbyModal) closeLobbyModal(joinLobbyModal); });
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") {
+                if (createLobbyModal?.classList.contains("active")) closeLobbyModal(createLobbyModal);
+                if (joinLobbyModal?.classList.contains("active")) closeLobbyModal(joinLobbyModal);
+            }
+        });
+
         // Quick Access button handlers
         quickPlayLocalBtn?.addEventListener("click", () => {
             toggleQuickHomeTile(true);
