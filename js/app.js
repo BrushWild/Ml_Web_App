@@ -47,7 +47,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Mode Indicator
         const modeIndicatorEl = document.getElementById("mode-indicator");
-        const confirmScoreBtn = document.getElementById("confirm-score-btn");
 
         // Quick Home Tile Elements
         const quickHomeTile = document.getElementById("quick-home-tile");
@@ -1006,20 +1005,14 @@ document.addEventListener("DOMContentLoaded", () => {
             retakeBtn.classList.add("hidden");
             acceptScoreBtn.classList.add("hidden");
             acceptContinueBtn?.classList.add("hidden");
-            confirmScoreBtn?.classList.add("hidden");
         });
 
         acceptScoreBtn.addEventListener("click", () => {
-            if (playMode === 'local') {
-                currentStore.updateScore(currentPlayerIdForScore, currentScore);
-                closeCameraModal();
-                renderPlayers();
-            } else {
-                acceptScoreBtn.classList.add("hidden");
-                acceptContinueBtn?.classList.add("hidden");
-                confirmScoreBtn?.classList.remove("hidden");
-                statusMessageEl.textContent = "Click 'Confirm' to send to server.";
-            }
+            // Commit the score to the player's record and close the modal
+            // (works in both local and online modes).
+            currentStore.updateScore(currentPlayerIdForScore, currentScore);
+            closeCameraModal();
+            renderPlayers();
         });
 
         acceptContinueBtn?.addEventListener("click", () => {
@@ -1030,17 +1023,10 @@ document.addEventListener("DOMContentLoaded", () => {
             retakeBtn.classList.add("hidden");
             acceptScoreBtn.classList.add("hidden");
             acceptContinueBtn.classList.add("hidden");
-            confirmScoreBtn?.classList.add("hidden");
             webcamEl.classList.remove("hidden");
             overlayCanvas.classList.add("hidden");
             captureBtn.classList.remove("hidden");
             statusMessageEl.textContent = "Score saved. Capture again?";
-        });
-
-        confirmScoreBtn?.addEventListener("click", () => {
-            currentStore.updateScore(currentPlayerIdForScore, currentScore);
-            closeCameraModal();
-            renderPlayers();
         });
 
         // Initial render
