@@ -28,6 +28,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const captureBtn = document.getElementById("capture-btn");
         const retakeBtn = document.getElementById("retake-btn");
         const acceptScoreBtn = document.getElementById("accept-score-btn");
+        const acceptContinueBtn = document.getElementById("accept-continue-btn");
+        const continueScoreEl = acceptContinueBtn ? acceptContinueBtn.querySelector(".continue-score") : null;
         const calculatedScoreEl = document.getElementById("calculated-score");
         const statusMessageEl = document.getElementById("status-message");
 
@@ -940,6 +942,7 @@ document.addEventListener("DOMContentLoaded", () => {
             captureBtn.classList.remove("hidden");
             retakeBtn.classList.add("hidden");
             acceptScoreBtn.classList.add("hidden");
+            acceptContinueBtn?.classList.add("hidden");
             statusMessageEl.textContent = "Starting camera...";
             cameraModal.classList.add("active");
 
@@ -985,9 +988,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 const { score } = await processImageForScore(overlayCanvas);
                 currentScore = score;
                 calculatedScoreEl.textContent = score;
+                continueScoreEl.textContent = score;
                 captureBtn.classList.add("hidden");
                 retakeBtn.classList.remove("hidden");
                 acceptScoreBtn.classList.remove("hidden");
+                acceptContinueBtn?.classList.remove("hidden");
                 statusMessageEl.textContent = `Score: ${score}`;
             } catch (err) {
                 statusMessageEl.textContent = "Processing failed.";
@@ -1000,6 +1005,8 @@ document.addEventListener("DOMContentLoaded", () => {
             captureBtn.classList.remove("hidden");
             retakeBtn.classList.add("hidden");
             acceptScoreBtn.classList.add("hidden");
+            acceptContinueBtn?.classList.add("hidden");
+            confirmScoreBtn?.classList.add("hidden");
         });
 
         acceptScoreBtn.addEventListener("click", () => {
@@ -1009,9 +1016,25 @@ document.addEventListener("DOMContentLoaded", () => {
                 renderPlayers();
             } else {
                 acceptScoreBtn.classList.add("hidden");
+                acceptContinueBtn?.classList.add("hidden");
                 confirmScoreBtn?.classList.remove("hidden");
                 statusMessageEl.textContent = "Click 'Confirm' to send to server.";
             }
+        });
+
+        acceptContinueBtn?.addEventListener("click", () => {
+            // Accept this score for the current player and stay in the modal,
+            // ready to capture the next picture immediately.
+            currentStore.updateScore(currentPlayerIdForScore, currentScore);
+            renderPlayers();
+            retakeBtn.classList.add("hidden");
+            acceptScoreBtn.classList.add("hidden");
+            acceptContinueBtn.classList.add("hidden");
+            confirmScoreBtn?.classList.add("hidden");
+            webcamEl.classList.remove("hidden");
+            overlayCanvas.classList.add("hidden");
+            captureBtn.classList.remove("hidden");
+            statusMessageEl.textContent = "Score saved. Capture again?";
         });
 
         confirmScoreBtn?.addEventListener("click", () => {
