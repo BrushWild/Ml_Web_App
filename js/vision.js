@@ -5,6 +5,19 @@ let yoloModel = null;
 const MODEL_PATH = 'assets/models/best.onnx';
 const INPUT_SIZE = 640;
 
+// === Tuned thresholds (grid-searched against /opt/training_data, 2026-08) ===
+// CONF_THRESHOLD: detection confidence floor (one-pass & two-pass)
+const CONF_THRESHOLD = 0.15;
+// DOMINO_NMS_THRESHOLD: NMS IoU threshold for domino boxes (both passes)
+const DOMINO_NMS_THRESHOLD = 0.30;
+// PIP_NMS_THRESHOLD: NMS IoU threshold for pip boxes in processImageForScore
+const PIP_NMS_THRESHOLD = 0.50;
+// PIP_NMS_THRESHOLD_TWO_PASS: NMS IoU threshold for pip boxes in the
+// per-domino crop pass (lower = more aggressive dedup inside crops)
+const PIP_NMS_THRESHOLD_TWO_PASS = 0.20;
+// CROP_PADDING_FACTOR: crop padding around each domino box for pass 2
+const CROP_PADDING_FACTOR = 0.25;
+
 // Initialize ONNX Session
 export async function initVisionModel() {
     try {
@@ -180,7 +193,7 @@ export const processImageForScoreTwoPass = async (sourceCanvas) => {
     // Extract only dominos from pass 1
     let dominos = pass1Detections.filter(d => d.classId === 0);
     if (!isEnd2EndFormat) {
-        dominos = nms(dominos, 0.45);
+        dominos = nms(dominos, DOMINO_NMS_THRESHOLD);
     }
 
     Logger.table('Pass 1 Results', {
@@ -200,7 +213,7 @@ export const processImageForScoreTwoPass = async (sourceCanvas) => {
 
     // === Pass 2: Crop each domino and detect pips ===
     Logger.group(`Pass 2: Detect Pips (${dominos.length} crops)`);
-    const PADDING_FACTOR = 0.10; // 10% padding around each crop
+    const PADDING_FACTOR = CROP_PADDING_FACTOR; // grid-tuned crop padding
     const allPips = [];
 
     for (let di = 0; di < dominos.length; di++) {
@@ -259,7 +272,7 @@ export const processImageForScoreTwoPass = async (sourceCanvas) => {
         let cropPips = cropDetections.filter(det => det.classId === 1);
 
         // Apply NMS on crop pips
-        cropPips = nms(cropPips, 0.5);
+        cropPips = nms(cropPips, PIP_NMS_THRESHOLD_TWO_PASS);
 
         Logger.table(`Crop ${di + 1} Results`, {
             inferenceTime: `${pass2Ms} ms`,
@@ -305,7 +318,6 @@ export const processImageForScoreTwoPass = async (sourceCanvas) => {
  * Supports both End2end NMS format [1, N, 6] and Standard format [1, features, anchors].
  */
 function parseRawDetections(outputData, dims, isEnd2EndFormat, ratio, padX, padY) {
-    const CONF_THRESHOLD = 0.5;
     const detections = [];
 
     if (isEnd2EndFormat) {
@@ -477,12 +489,12 @@ function postProcessDetections(detections, isEnd2EndFormat = false) {
         // End2end format: model already performed NMS, but apply a second
         // JS-side NMS pass to match the Python app's double-dedup behavior.
         // This prevents near-duplicate pip detections at high pip counts.
-        dedupedPips = nms(rawPips, 0.5);
+        dedupedPips = nms(rawPips, PIP_NMS_THRESHOLD);
         Logger.info(`Post-NMS (end2end + JS dedup): ${rawPips.length} → ${dedupedPips.length} pips`);
     } else {
         // Standard format: apply NMS ourselves
-        dominos = nms(dominos, 0.45);
-        dedupedPips = nms(rawPips, 0.5);
+        dominos = nms(dominos, DOMINO_NMS_THRESHOLD);
+        dedupedPips = nms(rawPips, PIP_NMS_THRESHOLD);
         Logger.info(`Post-NMS: ${dominos.length} dominos, ${dedupedPips.length} pips`);
     }
 
