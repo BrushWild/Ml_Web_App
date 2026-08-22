@@ -1144,6 +1144,19 @@ canvas {
     border: 1px solid var(--md-outline);
 }
 
+/* ── Model Toggle (previous vs new GPU model) ──────── */
+#model-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding: 8px 14px;
+    background: var(--md-surface-variant);
+    border-radius: var(--radius-full);
+    border: 1px solid var(--md-outline);
+}
+
 .mode-label {
     font-size: 13px;
     font-weight: 500;

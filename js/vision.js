@@ -1,8 +1,20 @@
 import { Logger } from './logger.js';
 
 let yoloModel = null;
-// Resolve model path relative to project root
-const MODEL_PATH = 'assets/models/best.onnx';
+let currentModelId = null;
+let modelLoading = false;
+
+// Resolve model paths relative to project root.
+// "previous" = the long-standing production model; "gpu" = the new
+// GPU-trained model. Both share the same I/O contract
+// (input "images" [1,3,640,640] -> output "output0" [1,300,6]),
+// so they are drop-in interchangeable.
+const MODEL_PATHS = {
+    previous: 'assets/models/best.onnx',
+    gpu: 'assets/models/gpu-best.onnx',
+};
+const DEFAULT_MODEL_ID = 'previous';
+const MODEL_STORAGE_KEY = 'dominoVisionModel';
 const INPUT_SIZE = 640;
 
 // === Tuned thresholds (grid-searched against /opt/training_data, 2026-08) ===
@@ -18,17 +30,43 @@ const PIP_NMS_THRESHOLD_TWO_PASS = 0.20;
 // CROP_PADDING_FACTOR: crop padding around each domino box for pass 2
 const CROP_PADDING_FACTOR = 0.25;
 
+/**
+ * Load (or switch to) the ONNX model for the given id.
+ * @param {'previous'|'gpu'} modelId - Which detection model to load.
+ */
+export async function loadModel(modelId) {
+    if (!MODEL_PATHS[modelId]) {
+        Logger.error(`Unknown model id: ${modelId}`);
+        throw new Error(`Unknown model id: ${modelId}`);
+    }
+    if (modelId === currentModelId && yoloModel) {
+        return yoloModel; // already loaded
+    }
+
+    const path = MODEL_PATHS[modelId];
+    Logger.info(`Loading YOLO ONNX model "${modelId}" from: ${path}`);
+    const session = await ort.InferenceSession.create(path, { executionProviders: ['wasm'] });
+    yoloModel = session;
+    currentModelId = modelId;
+    Logger.info(`Model "${modelId}" loaded successfully.`);
+    return session;
+}
+
 // Initialize ONNX Session
 export async function initVisionModel() {
     try {
         Logger.group('Model Initialization');
-        Logger.info(`Loading YOLO ONNX model from: ${MODEL_PATH}`);
         Logger.info(`ONNX Runtime version: ${ort.env?.versions?.web || 'unknown'}`);
 
-        ort.env.wasm.numThreads = 1;
-        yoloModel = await ort.InferenceSession.create(MODEL_PATH, { executionProviders: ['wasm'] });
-
-        Logger.info('Model loaded successfully.');
+        const saved = localStorage.getItem(MODEL_STORAGE_KEY);
+        const modelId = MODEL_PATHS[saved] ? saved : DEFAULT_MODEL_ID;
+        modelLoading = true;
+        try {
+            await loadModel(modelId);
+        } finally {
+            modelLoading = false;
+        }
+        Logger.info(`Active model: ${modelId} (${MODEL_PATHS[modelId]})`);
         Logger.table('Model Details', {
             inputNames: yoloModel.inputNames.join(', '),
             outputNames: yoloModel.outputNames.join(', '),
@@ -41,8 +79,54 @@ export async function initVisionModel() {
     }
 }
 
-// Ensure model is loaded on script load
+/**
+ * Switch the active detection model at runtime.
+ * Guards against concurrent loads (modelLoading) and a missing
+ * model id. Fallback to the previous model if the new one fails.
+ * @param {'previous'|'gpu'} modelId - Model to switch to.
+ */
+export async function setModel(modelId) {
+    if (modelLoading) {
+        Logger.info(`Model load already in progress — ignoring switch to "${modelId}".`);
+        return currentModelId;
+    }
+    if (!MODEL_PATHS[modelId]) {
+        Logger.error(`setModel: unknown id "${modelId}"`);
+        return currentModelId;
+    }
+    if (modelId === currentModelId) {
+        return currentModelId; // no-op
+    }
+    modelLoading = true;
+    try {
+        await loadModel(modelId);
+        localStorage.setItem(MODEL_STORAGE_KEY, modelId);
+        Logger.info(`Detection model switched to: ${modelId} (${MODEL_PATHS[modelId]})`);
+        return currentModelId;
+    } catch (e) {
+        Logger.error(`Failed to switch to "${modelId}": ${e.message}`);
+        Logger.error(`Falling back to previous model.`);
+        // Ensure yoloModel is at least the default if the previous model
+        // was already active.
+        if (!yoloModel) {
+            try { await loadModel(DEFAULT_MODEL_ID); }
+            catch (e2) {
+                Logger.error(`Fallback model load also failed: ${e2.message}`);
+            }
+        }
+        return currentModelId;
+    } finally {
+        modelLoading = false;
+    }
+}
+
+// Initialize model on script load (loads the previously-selected model if any)
 initVisionModel();
+
+/** @returns {string|null} The id of the currently-loaded model. */
+export function getCurrentModelId() {
+    return currentModelId;
+}
 
 /**
  * Main function called by app.js to process the captured canvas.
