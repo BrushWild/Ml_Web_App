@@ -12,7 +12,7 @@
     <!-- Material Icons -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     <!-- Material Design — Pastel Green Light Theme -->
-    <link rel="stylesheet" href="css/style.css?v=3">
+    <link rel="stylesheet" href="css/style.css?v=4">
 </head>
 
 <body>
@@ -142,6 +142,16 @@
                         <span class="toggle-slider"></span>
                     </label>
                     <span class="mode-label" id="mode-label-twopass">Two-Pass Crop</span>
+                </div>
+
+                <!-- Model toggle: previous vs new (GPU) detection model -->
+                <div id="model-toggle">
+                    <span class="mode-label" id="model-label-previous">Previous Model</span>
+                    <label class="toggle-switch" title="Toggle detection model">
+                        <input type="checkbox" id="model-toggle-input">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="mode-label" id="model-label-gpu">New (GPU) Model</span>
                 </div>
 
                 <!-- Live camera feed / result canvas -->
@@ -449,7 +459,7 @@
     </button>
 
     <!-- ── Application Scripts ────────────────────── -->
-    <script type="module" src="js/app.js?v=7"></script>
+    <script type="module" src="js/app.js?v=8"></script>
 
     <!-- ── Button stretch-on-click micro-animation ── -->
     <script>

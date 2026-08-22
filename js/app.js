@@ -1,6 +1,6 @@
 console.log("app.js: Script loading started");
 import { Logger } from './logger.js';
-import { processImageForScore, processImageForScoreTwoPass } from './vision.js';
+import { processImageForScore, processImageForScoreTwoPass, setModel, getCurrentModelId } from './vision.js?v=2';
 import * as stdb from './stdb.bundle.js';
 import { LocalStorageStore } from './stores/LocalStorageStore.js?v=2';
 import { SpacetimeDBStore } from './stores/SpacetimeDBStore.js?v=2';
@@ -44,6 +44,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const twoPassToggle = document.getElementById("two-pass-toggle");
         const modeLabelSingle = document.getElementById("mode-label-single");
         const modeLabelTwopass = document.getElementById("mode-label-twopass");
+
+        // Model Toggle (previous vs new GPU model)
+        const modelToggleInput = document.getElementById("model-toggle-input");
+        const modelLabelPrevious = document.getElementById("model-label-previous");
+        const modelLabelGpu = document.getElementById("model-label-gpu");
 
         // Mode Indicator
         const modeIndicatorEl = document.getElementById("mode-indicator");
@@ -161,16 +166,47 @@ document.addEventListener("DOMContentLoaded", () => {
         const themeIcon = document.getElementById("theme-icon");
 
         if (localStorage.getItem('dominoTheme') === 'dark') {
-            document.body.classList.add('dark-theme');
+            document.body.setAttribute('data-theme', 'dark');
             if (themeCheckbox) themeCheckbox.checked = true;
             if (themeIcon) themeIcon.textContent = 'dark_mode';
         }
 
         themeCheckbox?.addEventListener("change", () => {
-            const isDark = document.body.classList.toggle('dark-theme');
+            const isDark = themeCheckbox.checked;
+            if (isDark) {
+                document.body.setAttribute('data-theme', 'dark');
+            } else {
+                document.body.removeAttribute('data-theme');
+            }
             localStorage.setItem('dominoTheme', isDark ? 'dark' : 'light');
             if (themeIcon) themeIcon.textContent = isDark ? 'dark_mode' : 'light_mode';
             Logger.info(`Theme toggled to ${isDark ? 'Dark' : 'Light'}`);
+        });
+
+        // === Model Toggle Logic ===
+        const syncModelToggle = (modelId) => {
+            const isGpu = modelId === 'gpu';
+            if (modelToggleInput) modelToggleInput.checked = isGpu;
+            modelLabelPrevious?.classList.toggle('active', !isGpu);
+            modelLabelGpu?.classList.toggle('active', isGpu);
+        };
+        // Initialize the toggle to reflect the currently-loaded model.
+        syncModelToggle(getCurrentModelId());
+
+        modelToggleInput?.addEventListener("change", async () => {
+            const modelId = modelToggleInput.checked ? 'gpu' : 'previous';
+            // Disable while loading to avoid a second concurrent load.
+            modelToggleInput.disabled = true;
+            const status = statusMessageEl;
+            const prevText = status ? status.textContent : '';
+            if (status) status.textContent = 'Switching model…';
+            try {
+                const active = await setModel(modelId);
+                syncModelToggle(active);
+            } finally {
+                modelToggleInput.disabled = false;
+                if (status) status.textContent = prevText;
+            }
         });
 
         // === Store & Mode Logic ===
